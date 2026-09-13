@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>نظام الأجور - GO v5.2 MULTI-CREW</title>
+    <title>نظام الأجور - GO v5.5 FINAL</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -70,7 +70,6 @@
         }
         .editing-banner.show { display: block; }
         
-        /* ✅ أنماط جديدة للموظفين المتعددين */
         .crew-section {
             background: rgba(236, 72, 153, 0.1);
             border: 2px solid #ec4899;
@@ -78,18 +77,13 @@
             padding: 15px;
             margin-bottom: 15px;
         }
-        .crew-section h3 {
-            color: #ec4899;
-            margin-bottom: 12px;
-            font-size: 1.1em;
-        }
+        .crew-section h3 { color: #ec4899; margin-bottom: 12px; font-size: 1.1em; }
         .crew-member {
             background: #0f172a;
             border: 1px solid #475569;
             border-radius: 8px;
             padding: 12px;
             margin-bottom: 12px;
-            position: relative;
         }
         .crew-member-header {
             display: flex;
@@ -99,33 +93,19 @@
             padding-bottom: 8px;
             border-bottom: 1px solid #334155;
         }
-        .crew-member-title {
-            color: #ec4899;
-            font-weight: bold;
-        }
+        .crew-member-title { color: #ec4899; font-weight: bold; }
         .btn-remove-crew {
-            background: var(--red);
-            color: #fff;
-            border: none;
-            padding: 4px 8px;
-            border-radius: 5px;
-            font-size: 0.8em;
-            cursor: pointer;
+            background: var(--red); color: #fff;
+            border: none; padding: 4px 8px;
+            border-radius: 5px; font-size: 0.8em; cursor: pointer;
         }
-        .crew-time-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
+        .crew-time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .total-crew-info {
             background: rgba(16, 185, 129, 0.1);
             border: 1px solid var(--green);
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 10px;
-            text-align: center;
-            color: var(--green);
-            font-weight: bold;
+            padding: 10px; border-radius: 8px;
+            margin-top: 10px; text-align: center;
+            color: var(--green); font-weight: bold;
         }
         
         .entries-list { margin-top: 10px; }
@@ -147,20 +127,9 @@
             margin-right: 5px;
         }
         
-        .entry-actions { 
-            display: flex; gap: 6px; margin-top: 8px; 
-            justify-content: flex-end;
-        }
-        .btn-edit-entry { 
-            background: var(--orange); color: #0b1120; 
-            padding: 6px 12px; border-radius: 6px; 
-            border: none; font-size: 0.85em; font-weight: bold; cursor: pointer;
-        }
-        .btn-delete-entry { 
-            background: var(--red); color: #fff; 
-            padding: 6px 12px; border-radius: 6px; 
-            border: none; font-size: 0.85em; font-weight: bold; cursor: pointer;
-        }
+        .entry-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
+        .btn-edit-entry { background: var(--orange); color: #0b1120; padding: 6px 12px; border-radius: 6px; border: none; font-size: 0.85em; font-weight: bold; cursor: pointer; }
+        .btn-delete-entry { background: var(--red); color: #fff; padding: 6px 12px; border-radius: 6px; border: none; font-size: 0.85em; font-weight: bold; cursor: pointer; }
         
         .stats-bar { background: rgba(56, 189, 248, 0.1); border: 1px solid var(--accent); padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center; }
         
@@ -170,17 +139,17 @@
 <body>
 
 <div class="container">
-    <h1>📊 نظام الأجور <span class="tag">GO v5.2</span></h1>
+    <h1>📊 نظام الأجور <span class="tag">GO v5.5</span></h1>
     
     <div class="auto-save-indicator">
         <span>💾</span>
-        <span>حفظ تلقائي</span>
+        <span>حفظ تلقائي معزول</span>
     </div>
     
     <div class="stats-bar" id="statsBar">📊 جاري التحميل...</div>
     
     <div id="editingBanner" class="editing-banner">
-        ️ وضع التعديل: <span id="editingInfo"></span>
+        ✏️ وضع التعديل: <span id="editingInfo"></span>
         <br>
         <button class="btn-cancel" onclick="cancelEdit()" style="margin-top:8px;padding:6px 15px;font-size:0.85em;">❌ إلغاء التعديل</button>
     </div>
@@ -189,7 +158,7 @@
         <h3 style="color:var(--green);margin-bottom:10px;">💾 إدارة البيانات</h3>
         <div class="btns">
             <button onclick="exportBackup()" class="btn-backup">📤 نسخة احتياطية</button>
-            <button onclick="document.getElementById('importFile').click()" class="btn-util">📥 استيراد</button>
+            <button onclick="document.getElementById('importFile').click()" class="btn-util"> استيراد</button>
             <button onclick="clearAllData()" class="btn-util">🗑️ مسح الكل</button>
         </div>
         <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importBackup(this)">
@@ -205,9 +174,8 @@
             <div><label>📅 الشهر</label><input type="month" id="inpMonth"></div>
             <div style="grid-column: 1/-1;"><label>📅 التاريخ</label><input type="date" id="inpDate"></div>
             
-            <!-- ✅ قسم المنظمين المتعددين -->
             <div class="crew-section" style="grid-column: 1/-1;">
-                <h3>👥 منظمي السير</h3>
+                <h3>👥 منظمي السير (Verkeersregelaars)</h3>
                 <div style="margin-bottom:10px;">
                     <label>عدد المنظمين:</label>
                     <div style="display:flex;gap:10px;align-items:center;">
@@ -215,9 +183,7 @@
                         <button class="btn-util" onclick="resetToSingleCrew()" style="min-width:100px;">🔄 شخص واحد</button>
                     </div>
                 </div>
-                <div id="crewMembersContainer">
-                    <!-- سيتم إضافة المنظمين هنا ديناميكياً -->
-                </div>
+                <div id="crewMembersContainer"></div>
                 <div id="totalCrewInfo" class="total-crew-info" style="display:none;">
                     إجمالي المنظمين: <span id="totalCrewCount">1</span> | 
                     إجمالي الساعات: <span id="totalCrewHours">0</span> | 
@@ -225,7 +191,7 @@
                 </div>
             </div>
             
-            <div><label> استراحة</label>
+            <div><label>☕ استراحة</label>
                 <select id="inpBreak" onchange="doCalc()">
                     <option value="0">0 min</option>
                     <option value="15">15 min</option>
@@ -267,7 +233,7 @@
             <div><label>Van:</label><input type="date" id="dutchFrom"></div>
             <div><label>Tot:</label><input type="date" id="dutchTo"></div>
         </div>
-        <button class="btn-pdf" style="width:100%;margin-top:10px;" onclick="generatePDF()"> PDF Factuur</button>
+        <button class="btn-pdf" style="width:100%;margin-top:10px;" onclick="generatePDF()">📥 PDF Factuur</button>
     </div>
 </div>
 
@@ -275,60 +241,103 @@
 <div class="dr-badge">⚙️ د. عبدالله</div>
 
 <script>
+// ============================================
+// ✅ مفتاح التخزين الفريد - معزول تماماً عن البرامج الأخرى
+// ============================================
+const UNIQUE_STORAGE_KEY = 'DR_ABDELLAH_WAGES_GO5_UNIQUE';
+
 let entries = [];
 let names = new Set();
 let locs = new Set();
 let employers = new Set();
-const STORAGE_KEY = 'GO_WAGES_DATA_v5_2';
 let editingId = null;
-let crewMembers = []; // لتخزين بيانات المنظمين المتعددين
+let crewMembers = [];
 
+// ✅ دالة التحميل مع ترحيل تلقائي من المفاتيح القديمة
 function loadData() {
     try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            const data = JSON.parse(saved);
-            entries = data.entries || [];
-            names = new Set(data.names || []);
-            locs = new Set(data.locs || []);
-            employers = new Set(data.employers || []);
-            showToast(`📥 تم تحميل ${entries.length} إدخال`);
+        // المفاتيح القديمة المحتملة للترحيل
+        const oldKeys = [
+            'GO_WAGES_DATA_v5_4',
+            'GO_WAGES_DATA_v5_3',
+            'GO_WAGES_DATA_v5_2',
+            'GO_WAGES_DATA_v5_1',
+            'GO_WAGES_DATA_v5',
+            'GO_WAGES_DATA_v4',
+            'GO_WAGES_DATA_v3_9',
+            'GO_WAGES_DATA_v3_8',
+            'GO_WAGES_DATA'
+        ];
+        
+        let data = null;
+        
+        // 1. البحث في المفتاح الفريد الجديد أولاً
+        data = localStorage.getItem(UNIQUE_STORAGE_KEY);
+        
+        // 2. إذا لم يوجد، البحث في المفاتيح القديمة وترحيلها
+        if (!data) {
+            for (let key of oldKeys) {
+                const oldData = localStorage.getItem(key);
+                if (oldData) {
+                    console.log('📦 تم العثور على بيانات قديمة في:', key);
+                    data = oldData;
+                    // ترحيل البيانات إلى المفتاح الفريد الجديد
+                    localStorage.setItem(UNIQUE_STORAGE_KEY, oldData);
+                    localStorage.removeItem(key); // حذف المفتاح القديم
+                    showToast('🔄 تم ترحيل البيانات القديمة تلقائياً');
+                    break;
+                }
+            }
         }
-    } catch (e) { console.error('خطأ في التحميل:', e); }
+        
+        // 3. تحميل البيانات
+        if (data) {
+            const parsed = JSON.parse(data);
+            entries = parsed.entries || [];
+            names = new Set(parsed.names || []);
+            locs = new Set(parsed.locs || []);
+            employers = new Set(parsed.employers || []);
+            showToast(`✅ تم تحميل ${entries.length} إدخال`);
+        } else {
+            showToast('📭 لا توجد بيانات محفوظة');
+        }
+    } catch (e) { 
+        console.error('خطأ في التحميل:', e); 
+        showToast('⚠️ خطأ في تحميل البيانات', true);
+    }
     updateUI();
     initCrewSystem();
 }
 
+// ✅ دالة الحفظ - تستخدم المفتاح الفريد فقط
 function saveData() {
     try {
         const data = {
-            entries, names: [...names], locs: [...locs], employers: [...employers],
-            lastSave: new Date().toISOString()
+            entries, 
+            names: [...names], 
+            locs: [...locs], 
+            employers: [...employers],
+            lastSave: new Date().toISOString(),
+            programId: 'GO5_DR_ABDELLAH',
+            version: '5.5'
         };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) { console.error('خطأ في الحفظ:', e); }
+        localStorage.setItem(UNIQUE_STORAGE_KEY, JSON.stringify(data));
+        console.log('💾 تم الحفظ في المفتاح الفريد:', UNIQUE_STORAGE_KEY);
+    } catch (e) { 
+        console.error('خطأ في الحفظ:', e); 
+    }
 }
 
-// ✅ نظام المنظمين المتعددين
 function initCrewSystem() {
-    // بدء بمنظم واحد
     if (crewMembers.length === 0) {
-        crewMembers = [{
-            id: 1,
-            startTime: '08:00',
-            endTime: '16:00'
-        }];
+        crewMembers = [{ id: 1, startTime: '08:00', endTime: '16:00' }];
         renderCrewMembers();
     }
 }
 
 function addCrewMember() {
     const newId = crewMembers.length > 0 ? Math.max(...crewMembers.map(m => m.id)) + 1 : 1;
-    crewMembers.push({
-        id: newId,
-        startTime: '08:00',
-        endTime: '16:00'
-    });
+    crewMembers.push({ id: newId, startTime: '08:00', endTime: '16:00' });
     renderCrewMembers();
     doCalc();
     showToast(`👥 تم إضافة منظم (${crewMembers.length} إجمالي)`);
@@ -336,7 +345,7 @@ function addCrewMember() {
 
 function removeCrewMember(id) {
     if (crewMembers.length <= 1) {
-        showToast('️ يجب أن يكون هناك منظم واحد على الأقل', true);
+        showToast('⚠️ يجب أن يكون هناك منظم واحد على الأقل', true);
         return;
     }
     crewMembers = crewMembers.filter(m => m.id !== id);
@@ -355,7 +364,6 @@ function updateCrewTime(id, field, value) {
 function renderCrewMembers() {
     const container = document.getElementById('crewMembersContainer');
     if (crewMembers.length === 1) {
-        // عرض بسيط لمنظم واحد
         container.innerHTML = `
             <div class="crew-member">
                 <div class="crew-member-header">
@@ -363,56 +371,42 @@ function renderCrewMembers() {
                 </div>
                 <div class="crew-time-grid">
                     <div>
-                        <label>⏰ البداية</label>
-                        <input type="time" id="crewStartTime_1" 
-                               value="${crewMembers[0].startTime}" 
-                               onchange="updateCrewTime(1, 'startTime', this.value)">
+                        <label> البداية</label>
+                        <input type="time" id="crewStartTime_1" value="${crewMembers[0].startTime}" onchange="updateCrewTime(1, 'startTime', this.value)">
                     </div>
                     <div>
                         <label>⏰ النهاية</label>
-                        <input type="time" id="crewEndTime_1" 
-                               value="${crewMembers[0].endTime}" 
-                               onchange="updateCrewTime(1, 'endTime', this.value)">
+                        <input type="time" id="crewEndTime_1" value="${crewMembers[0].endTime}" onchange="updateCrewTime(1, 'endTime', this.value)">
                     </div>
                 </div>
             </div>
         `;
     } else {
-        // عرض مفصل لعدة منظمين
         container.innerHTML = crewMembers.map((member, index) => `
             <div class="crew-member">
                 <div class="crew-member-header">
-                    <span class="crew-member-title"> منظم #${index + 1}</span>
-                    <button class="btn-remove-crew" onclick="removeCrewMember(${member.id})">️ حذف</button>
+                    <span class="crew-member-title">👤 منظم #${index + 1}</span>
+                    <button class="btn-remove-crew" onclick="removeCrewMember(${member.id})">🗑️ حذف</button>
                 </div>
                 <div class="crew-time-grid">
                     <div>
                         <label>⏰ البداية</label>
-                        <input type="time" id="crewStartTime_${member.id}" 
-                               value="${member.startTime}" 
-                               onchange="updateCrewTime(${member.id}, 'startTime', this.value)">
+                        <input type="time" id="crewStartTime_${member.id}" value="${member.startTime}" onchange="updateCrewTime(${member.id}, 'startTime', this.value)">
                     </div>
                     <div>
                         <label>⏰ النهاية</label>
-                        <input type="time" id="crewEndTime_${member.id}" 
-                               value="${member.endTime}" 
-                               onchange="updateCrewTime(${member.id}, 'endTime', this.value)">
+                        <input type="time" id="crewEndTime_${member.id}" value="${member.endTime}" onchange="updateCrewTime(${member.id}, 'endTime', this.value)">
                     </div>
                 </div>
             </div>
         `).join('');
     }
-    
     document.getElementById('totalCrewCount').textContent = crewMembers.length;
 }
 
 function resetToSingleCrew() {
     if (crewMembers.length > 1 && confirm('العودة إلى منظم واحد فقط؟')) {
-        crewMembers = [{
-            id: 1,
-            startTime: crewMembers[0].startTime,
-            endTime: crewMembers[0].endTime
-        }];
+        crewMembers = [{ id: 1, startTime: crewMembers[0].startTime, endTime: crewMembers[0].endTime }];
         renderCrewMembers();
         doCalc();
         showToast('🔄 تم العودة إلى منظم واحد');
@@ -450,25 +444,16 @@ function calculateCrewHours() {
     
     const totalAmount = (totalHours * rate) + transport;
     
-    return {
-        totalHours,
-        totalAmount,
-        transport,
-        crewDetails,
-        rate,
-        km
-    };
+    return { totalHours, totalAmount, transport, crewDetails, rate, km };
 }
 
 function doCalc() {
     const result = calculateCrewHours();
     
     document.getElementById('liveTotal').textContent = result.totalAmount.toFixed(2);
-    document.getElementById('liveDetail').textContent = 
-        `(${result.totalHours}س × ${result.rate}) + (${result.km}كم × 0.20)`;
+    document.getElementById('liveDetail').textContent = `(${result.totalHours}س × ${result.rate}) + (${result.km}كم × 0.20)`;
     document.getElementById('liveHours').textContent = `⏱️ الساعات: ${result.totalHours.toFixed(1)}`;
     
-    // عرض معلومات المنظمين
     if (crewMembers.length > 1) {
         document.getElementById('totalCrewHours').textContent = result.totalHours.toFixed(1);
         document.getElementById('totalCrewAmount').textContent = result.totalAmount.toFixed(2);
@@ -485,7 +470,7 @@ function addOrUpdateEntry() {
     if (!name || !date) { showToast('⚠️ الاسم والتاريخ مطلوبان', true); return; }
     
     const result = calculateCrewHours();
-    if (result.totalHours === 0) { showToast('⚠️ الوقت مطلوب', true); return; }
+    if (result.totalHours === 0) { showToast('️ الوقت مطلوب', true); return; }
     
     const rate = parseFloat(document.getElementById('inpRate').value) || 0;
     const km = parseFloat(document.getElementById('inpKm').value) || 0;
@@ -542,7 +527,6 @@ function editEntry(id) {
     document.getElementById('inpKm').value = entry.km || 0;
     document.getElementById('inpNotes').value = entry.notes || '';
     
-    // استعادة بيانات المنظمين
     if (entry.crewDetails && entry.crewDetails.length > 0) {
         crewMembers = entry.crewDetails.map(c => ({
             id: c.id || Math.random(),
@@ -550,11 +534,7 @@ function editEntry(id) {
             endTime: c.endTime || '16:00'
         }));
     } else {
-        crewMembers = [{
-            id: 1,
-            startTime: entry.startTime || '08:00',
-            endTime: entry.endTime || '16:00'
-        }];
+        crewMembers = [{ id: 1, startTime: entry.startTime || '08:00', endTime: entry.endTime || '16:00' }];
     }
     
     renderCrewMembers();
@@ -575,7 +555,7 @@ function editEntry(id) {
 function cancelEdit() {
     editingId = null;
     const addBtn = document.getElementById('addBtn');
-    addBtn.textContent = '➕ إضافة يوم';
+    addBtn.textContent = ' إضافة يوم';
     addBtn.className = 'btn-add';
     document.getElementById('editingBanner').classList.remove('show');
     clearForm();
@@ -624,31 +604,30 @@ function updateUI() {
     } else {
         const sorted = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
         
-        listEl.innerHTML = sorted.map(e => `
-            <div class="entry-item">
-                <div class="info">
-                    <div class="name">
-                        ${e.name} - ${e.date}
-                        ${e.crewCount > 1 ? `<span class="crew-badge">${e.crewCount} منظمين</span>` : ''}
+        listEl.innerHTML = sorted.map(e => {
+            const crewInfo = e.crewCount > 1 ? 
+                e.crewDetails.map((c, i) => `👤${i+1}: ${c.startTime}-${c.endTime}`).join(' | ') :
+                `⏰ ${e.crewDetails ? e.crewDetails[0].startTime : ''} - ${e.crewDetails ? e.crewDetails[0].endTime : ''}`;
+            
+            return `
+                <div class="entry-item">
+                    <div class="info">
+                        <div class="name">
+                            ${e.name} - ${e.date}
+                            ${e.crewCount > 1 ? `<span class="crew-badge">${e.crewCount} منظمين</span>` : ''}
+                        </div>
+                        <div class="details">${crewInfo} | ⏱️ ${e.hours}س | 🚗 ${e.km}كم</div>
+                        ${e.loc ? `<div class="details">📍 ${e.loc}</div>` : ''}
+                        ${e.employer ? `<div class="details">🏢 ${e.employer}</div>` : ''}
                     </div>
-                    <div class="details">
-                        ${e.crewCount > 1 ? 
-                            e.crewDetails.map((c, i) => 
-                                `👤${i+1}: ${c.startTime}-${c.endTime}`
-                            ).join(' | ') :
-                            `⏰ ${e.crewDetails ? e.crewDetails[0].startTime : ''} - ${e.crewDetails ? e.crewDetails[0].endTime : ''}`
-                        } | ⏱️ ${e.hours}س | 🚗 ${e.km}كم
+                    <div class="amount">€${e.total.toFixed(2)}</div>
+                    <div class="entry-actions">
+                        <button class="btn-edit-entry" onclick="editEntry(${e.id})">️ تعديل</button>
+                        <button class="btn-delete-entry" onclick="deleteEntry(${e.id})">🗑️ حذف</button>
                     </div>
-                    ${e.loc ? `<div class="details">📍 ${e.loc}</div>` : ''}
-                    ${e.employer ? `<div class="details">🏢 ${e.employer}</div>` : ''}
                 </div>
-                <div class="amount">€${e.total.toFixed(2)}</div>
-                <div class="entry-actions">
-                    <button class="btn-edit-entry" onclick="editEntry(${e.id})">✏️ تعديل</button>
-                    <button class="btn-delete-entry" onclick="deleteEntry(${e.id})">🗑️ حذف</button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
     
     updateDatalists();
@@ -673,8 +652,16 @@ function updateDatalists() {
 }
 
 function exportBackup() {
-    if (entries.length === 0) { showToast('️ لا توجد بيانات', true); return; }
-    const data = { entries, names: [...names], locs: [...locs], employers: [...employers], exportDate: new Date().toISOString(), version: '5.2' };
+    if (entries.length === 0) { showToast('⚠️ لا توجد بيانات', true); return; }
+    const data = { 
+        entries, 
+        names: [...names], 
+        locs: [...locs], 
+        employers: [...employers], 
+        exportDate: new Date().toISOString(), 
+        version: '5.5',
+        programId: 'GO5_DR_ABDELLAH'
+    };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -712,11 +699,19 @@ function importBackup(input) {
     reader.readAsText(file);
 }
 
+// ✅ مسح البيانات - يحذف فقط بيانات هذا البرنامج
 function clearAllData() {
     if (!confirm('️ حذف جميع البيانات؟')) return;
     if (!confirm('تأكيد نهائي؟')) return;
-    entries = []; names.clear(); locs.clear(); employers.clear();
-    localStorage.removeItem(STORAGE_KEY);
+    
+    entries = []; 
+    names.clear(); 
+    locs.clear(); 
+    employers.clear();
+    
+    // حذف المفتاح الفريد فقط - لا يؤثر على برامج أخرى
+    localStorage.removeItem(UNIQUE_STORAGE_KEY);
+    
     cancelEdit();
     updateUI();
     showToast('🗑️ تم مسح جميع البيانات');
@@ -724,12 +719,15 @@ function clearAllData() {
 
 function clearLists() {
     if (!confirm('مسح القوائم فقط؟')) return;
-    names.clear(); locs.clear(); employers.clear();
+    names.clear(); 
+    locs.clear(); 
+    employers.clear();
     saveData();
     updateUI();
     showToast('🧹 تم مسح القوائم');
 }
 
+// ✅ دالة الفاتورة الذكية - مع إجمالي لكل منظم + ترجمة هولندية كاملة
 function generatePDF() {
     const sel = document.getElementById('dutchEmployerSelect').value;
     const from = document.getElementById('dutchFrom').value;
@@ -747,34 +745,131 @@ function generatePDF() {
     showToast('⏳ Generating PDF...');
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4');
+    
     doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
     doc.text('Factuur / Urenoverzicht', 105, 20, { align: 'center' });
+    
     doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
     doc.text(sel !== 'all' ? `Werkgever: ${sel}` : 'Alle Werkgevers', 105, 30, { align: 'center' });
-    if (from) doc.text(`Periode: ${from} - ${to}`, 105, 37, { align: 'center' });
+    
+    if (from) {
+        doc.setFontSize(10);
+        doc.text(`Periode: ${from} - ${to}`, 105, 37, { align: 'center' });
+    }
+    
+    function allCrewSameTime(crewDetails) {
+        if (!crewDetails || crewDetails.length <= 1) return true;
+        const first = crewDetails[0];
+        return crewDetails.every(c => 
+            c.startTime === first.startTime && c.endTime === first.endTime
+        );
+    }
     
     let grandTotal = 0, grandHours = 0, totalCrew = 0;
-    const tableData = filtered.map(e => {
-        grandTotal += e.total; grandHours += e.hours; totalCrew += (e.crewCount || 1);
-        const crewInfo = e.crewCount > 1 ? `${e.crewCount} persons` : '';
-        return [e.date, e.loc || '-', e.crewDetails ? e.crewDetails[0].startTime : '', e.crewDetails ? e.crewDetails[0].endTime : '', `${e.breakMins}m`, `${e.hours}h ${crewInfo}`, `€ ${e.rate.toFixed(2)}`, `€ ${e.total.toFixed(2)}`];
+    const tableData = [];
+    
+    filtered.forEach(e => {
+        grandTotal += e.total;
+        grandHours += e.hours;
+        const crewCount = e.crewCount || 1;
+        const crewDetails = e.crewDetails || [];
+        totalCrew += crewCount;
+        
+        const transportPerPerson = e.transport / crewCount;
+        
+        if (crewCount === 1 || allCrewSameTime(crewDetails)) {
+            const crewLabel = crewCount > 1 ? ` (${crewCount} verkeersregelaars)` : '';
+            const hoursText = crewCount > 1 
+                ? `${(e.hours / crewCount).toFixed(1)}u × ${crewCount} = ${e.hours}u` 
+                : `${e.hours} uur`;
+            
+            tableData.push([
+                e.date,
+                e.loc || '-',
+                crewDetails[0]?.startTime || '-',
+                crewDetails[0]?.endTime || '-',
+                `${e.breakMins} min`,
+                hoursText + crewLabel,
+                `€ ${e.rate.toFixed(2)}`,
+                `€ ${e.total.toFixed(2)}`
+            ]);
+        } 
+        else {
+            crewDetails.forEach((crew, index) => {
+                const isFirstRow = index === 0;
+                const isLastRow = index === crewDetails.length - 1;
+                
+                const personTotal = (crew.hours * e.rate) + transportPerPerson;
+                
+                tableData.push([
+                    isFirstRow ? e.date : '',
+                    isFirstRow ? e.loc || '-' : '',
+                    `Verkeersregelaar ${index + 1}`,
+                    `${crew.startTime} - ${crew.endTime}`,
+                    isFirstRow ? `${e.breakMins} min` : '',
+                    `${crew.hours} uur`,
+                    isFirstRow ? `€ ${e.rate.toFixed(2)}` : '',
+                    `€ ${personTotal.toFixed(2)}`
+                ]);
+            });
+            
+            tableData.push([
+                '', '', '', '', '',
+                { content: `Subtotaal ${crewCount} verkeersregelaars`, styles: { fontStyle: 'italic', halign: 'right', fontSize: 8 } },
+                '',
+                { content: `€ ${e.total.toFixed(2)}`, styles: { fontStyle: 'bold' } }
+            ]);
+        }
     });
     
     doc.autoTable({
         startY: from ? 45 : 38,
-        head: [['Datum', 'Locatie', 'Start', 'Eind', 'Pauze', 'Uren/Crew', 'Tarief', 'Totaal']],
+        head: [['Datum', 'Locatie', 'Start/Verkeersregelaar', 'Eind/Tijd', 'Pauze', 'Uren', 'Tarief', 'Totaal']],
         body: tableData,
         theme: 'grid',
-        headStyles: { fillColor: [56, 189, 248], textColor: [0, 0, 0], fontStyle: 'bold' },
+        headStyles: { 
+            fillColor: [56, 189, 248], 
+            textColor: [0, 0, 0], 
+            fontStyle: 'bold',
+            halign: 'center',
+            fontSize: 9
+        },
+        bodyStyles: {
+            halign: 'center',
+            textColor: [0, 0, 0],
+            fontSize: 9
+        },
         foot: [[
-            { content: 'Totaal', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
-            { content: `${grandHours.toFixed(1)}h (${totalCrew} crew)`, styles: { fontStyle: 'bold' } },
+            { content: 'TOTAAL:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold', fontSize: 11 } },
+            { content: `${grandHours.toFixed(1)} uur\n(${totalCrew} verkeersregelaars)`, styles: { fontStyle: 'bold', fontSize: 10 } },
             '-',
             { content: `€ ${grandTotal.toFixed(2)}`, styles: { fontStyle: 'bold', fontSize: 12 } }
-        ]]
+        ]],
+        footStyles: {
+            fillColor: [224, 224, 224],
+            textColor: [0, 0, 0],
+            fontStyle: 'bold'
+        },
+        margin: { top: 20, left: 8, right: 8 }
     });
     
-    doc.save(`Factuur_${new Date().toISOString().split('T')[0]}.pdf`);
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Totaal aantal dagen: ${filtered.length}`, 105, finalY, { align: 'center' });
+    doc.text(`Totaal aantal verkeersregelaars: ${totalCrew}`, 105, finalY + 7, { align: 'center' });
+    doc.text(`Totaal bedrag: € ${grandTotal.toFixed(2)}`, 105, finalY + 14, { align: 'center' });
+    
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Systeem ontwikkeld door Dr. Abdullah © ${new Date().getFullYear()}`, 105, 285, { align: 'center' });
+    
+    const filename = `Factuur_${sel !== 'all' ? sel.replace(/\s+/g, '_') : 'Alle'}_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(filename);
+    
     showToast('✅ PDF تم إنشاؤه!');
 }
 
