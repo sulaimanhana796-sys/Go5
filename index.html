@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>نظام الأجور - GO v5.1 EDIT</title>
+    <title>نظام الأجور - GO v5.2 MULTI-CREW</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -40,6 +40,7 @@
         .btn-util { background: #64748b; }
         .btn-backup { background: linear-gradient(135deg, #f59e0b, #d97706); color: #0b1120; }
         .btn-cancel { background: var(--red); }
+        .btn-crew { background: linear-gradient(135deg, #ec4899, #be185d); }
         
         .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--green); color: #fff; padding: 12px 20px; border-radius: 10px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; font-weight: bold; text-align: center; width: 90%; max-width: 400px; }
         .toast.show { opacity: 1; }
@@ -56,7 +57,6 @@
             display: flex; align-items: center; gap: 6px;
         }
         
-        /* ✅ شريط وضع التعديل */
         .editing-banner {
             background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2));
             border: 2px solid var(--orange);
@@ -67,10 +67,66 @@
             text-align: center;
             font-weight: bold;
             display: none;
-            animation: pulse 1.5s infinite;
         }
         .editing-banner.show { display: block; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        
+        /* ✅ أنماط جديدة للموظفين المتعددين */
+        .crew-section {
+            background: rgba(236, 72, 153, 0.1);
+            border: 2px solid #ec4899;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .crew-section h3 {
+            color: #ec4899;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+        }
+        .crew-member {
+            background: #0f172a;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            position: relative;
+        }
+        .crew-member-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #334155;
+        }
+        .crew-member-title {
+            color: #ec4899;
+            font-weight: bold;
+        }
+        .btn-remove-crew {
+            background: var(--red);
+            color: #fff;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            cursor: pointer;
+        }
+        .crew-time-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .total-crew-info {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--green);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            color: var(--green);
+            font-weight: bold;
+        }
         
         .entries-list { margin-top: 10px; }
         .entry-item { 
@@ -81,8 +137,16 @@
         .entry-item .name { font-weight:bold; color:var(--accent); }
         .entry-item .details { font-size:0.85em; color:#94a3b8; margin-top:4px; }
         .entry-item .amount { color: var(--green); font-weight: bold; font-size: 1.1em; }
+        .crew-badge {
+            display: inline-block;
+            background: #ec4899;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            margin-right: 5px;
+        }
         
-        /* ✅ أزرار التعديل والحذف */
         .entry-actions { 
             display: flex; gap: 6px; margin-top: 8px; 
             justify-content: flex-end;
@@ -106,7 +170,7 @@
 <body>
 
 <div class="container">
-    <h1>📊 نظام الأجور <span class="tag">GO v5.1</span></h1>
+    <h1>📊 نظام الأجور <span class="tag">GO v5.2</span></h1>
     
     <div class="auto-save-indicator">
         <span>💾</span>
@@ -115,9 +179,8 @@
     
     <div class="stats-bar" id="statsBar">📊 جاري التحميل...</div>
     
-    <!-- ✅ شريط وضع التعديل -->
     <div id="editingBanner" class="editing-banner">
-        ✏️ وضع التعديل: <span id="editingInfo"></span>
+        ️ وضع التعديل: <span id="editingInfo"></span>
         <br>
         <button class="btn-cancel" onclick="cancelEdit()" style="margin-top:8px;padding:6px 15px;font-size:0.85em;">❌ إلغاء التعديل</button>
     </div>
@@ -125,7 +188,7 @@
     <div class="card">
         <h3 style="color:var(--green);margin-bottom:10px;">💾 إدارة البيانات</h3>
         <div class="btns">
-            <button onclick="exportBackup()" class="btn-backup"> نسخة احتياطية</button>
+            <button onclick="exportBackup()" class="btn-backup">📤 نسخة احتياطية</button>
             <button onclick="document.getElementById('importFile').click()" class="btn-util">📥 استيراد</button>
             <button onclick="clearAllData()" class="btn-util">🗑️ مسح الكل</button>
         </div>
@@ -134,18 +197,35 @@
     
     <div class="card">
         <div class="grid">
-            <div><label>👤 الاسم</label><input type="text" id="inpName" list="nameList"></div>
+            <div style="grid-column: 1/-1;"><label>👤 الاسم</label><input type="text" id="inpName" list="nameList"></div>
             <datalist id="nameList"></datalist>
-            <div><label> صاحب العمل</label><input type="text" id="inpEmployer" list="employerList"></div>
+            <div style="grid-column: 1/-1;"><label> صاحب العمل</label><input type="text" id="inpEmployer" list="employerList"></div>
             <datalist id="employerList"></datalist>
             <div><label>📱 الهاتف</label><input type="text" id="inpEmployerPhone" placeholder="0612345678"></div>
             <div><label>📅 الشهر</label><input type="month" id="inpMonth"></div>
-            <div><label>📅 التاريخ</label><input type="date" id="inpDate"></div>
+            <div style="grid-column: 1/-1;"><label>📅 التاريخ</label><input type="date" id="inpDate"></div>
             
-            <div><label>⏰ البداية</label><input type="time" id="inpStartTime" onchange="doCalc()" ontouchend="doCalc()"></div>
-            <div><label> النهاية</label><input type="time" id="inpEndTime" onchange="doCalc()" ontouchend="doCalc()"></div>
+            <!-- ✅ قسم المنظمين المتعددين -->
+            <div class="crew-section" style="grid-column: 1/-1;">
+                <h3>👥 منظمي السير</h3>
+                <div style="margin-bottom:10px;">
+                    <label>عدد المنظمين:</label>
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        <button class="btn-crew" onclick="addCrewMember()" style="flex:1;">➕ إضافة منظم</button>
+                        <button class="btn-util" onclick="resetToSingleCrew()" style="min-width:100px;">🔄 شخص واحد</button>
+                    </div>
+                </div>
+                <div id="crewMembersContainer">
+                    <!-- سيتم إضافة المنظمين هنا ديناميكياً -->
+                </div>
+                <div id="totalCrewInfo" class="total-crew-info" style="display:none;">
+                    إجمالي المنظمين: <span id="totalCrewCount">1</span> | 
+                    إجمالي الساعات: <span id="totalCrewHours">0</span> | 
+                    المجموع: €<span id="totalCrewAmount">0.00</span>
+                </div>
+            </div>
             
-            <div><label>☕ استراحة</label>
+            <div><label> استراحة</label>
                 <select id="inpBreak" onchange="doCalc()">
                     <option value="0">0 min</option>
                     <option value="15">15 min</option>
@@ -187,7 +267,7 @@
             <div><label>Van:</label><input type="date" id="dutchFrom"></div>
             <div><label>Tot:</label><input type="date" id="dutchTo"></div>
         </div>
-        <button class="btn-pdf" style="width:100%;margin-top:10px;" onclick="generatePDF()">📥 PDF Factuur</button>
+        <button class="btn-pdf" style="width:100%;margin-top:10px;" onclick="generatePDF()"> PDF Factuur</button>
     </div>
 </div>
 
@@ -199,10 +279,9 @@ let entries = [];
 let names = new Set();
 let locs = new Set();
 let employers = new Set();
-const STORAGE_KEY = 'GO_WAGES_DATA_v5_1';
-
-// ✅ متغير لتتبع وضع التعديل
+const STORAGE_KEY = 'GO_WAGES_DATA_v5_2';
 let editingId = null;
+let crewMembers = []; // لتخزين بيانات المنظمين المتعددين
 
 function loadData() {
     try {
@@ -217,6 +296,7 @@ function loadData() {
         }
     } catch (e) { console.error('خطأ في التحميل:', e); }
     updateUI();
+    initCrewSystem();
 }
 
 function saveData() {
@@ -229,55 +309,184 @@ function saveData() {
     } catch (e) { console.error('خطأ في الحفظ:', e); }
 }
 
-function doCalc() {
-    const startVal = document.getElementById('inpStartTime').value;
-    const endVal = document.getElementById('inpEndTime').value;
-    
-    if (!startVal || !endVal) {
-        document.getElementById('liveTotal').textContent = '0.00';
-        document.getElementById('liveHours').textContent = '⏱️ الساعات: 0.0';
-        document.getElementById('liveDetail').textContent = 'أدخل البيانات';
+// ✅ نظام المنظمين المتعددين
+function initCrewSystem() {
+    // بدء بمنظم واحد
+    if (crewMembers.length === 0) {
+        crewMembers = [{
+            id: 1,
+            startTime: '08:00',
+            endTime: '16:00'
+        }];
+        renderCrewMembers();
+    }
+}
+
+function addCrewMember() {
+    const newId = crewMembers.length > 0 ? Math.max(...crewMembers.map(m => m.id)) + 1 : 1;
+    crewMembers.push({
+        id: newId,
+        startTime: '08:00',
+        endTime: '16:00'
+    });
+    renderCrewMembers();
+    doCalc();
+    showToast(`👥 تم إضافة منظم (${crewMembers.length} إجمالي)`);
+}
+
+function removeCrewMember(id) {
+    if (crewMembers.length <= 1) {
+        showToast('️ يجب أن يكون هناك منظم واحد على الأقل', true);
         return;
     }
+    crewMembers = crewMembers.filter(m => m.id !== id);
+    renderCrewMembers();
+    doCalc();
+}
+
+function updateCrewTime(id, field, value) {
+    const member = crewMembers.find(m => m.id === id);
+    if (member) {
+        member[field] = value;
+        doCalc();
+    }
+}
+
+function renderCrewMembers() {
+    const container = document.getElementById('crewMembersContainer');
+    if (crewMembers.length === 1) {
+        // عرض بسيط لمنظم واحد
+        container.innerHTML = `
+            <div class="crew-member">
+                <div class="crew-member-header">
+                    <span class="crew-member-title">👤 المنظم الرئيسي</span>
+                </div>
+                <div class="crew-time-grid">
+                    <div>
+                        <label>⏰ البداية</label>
+                        <input type="time" id="crewStartTime_1" 
+                               value="${crewMembers[0].startTime}" 
+                               onchange="updateCrewTime(1, 'startTime', this.value)">
+                    </div>
+                    <div>
+                        <label>⏰ النهاية</label>
+                        <input type="time" id="crewEndTime_1" 
+                               value="${crewMembers[0].endTime}" 
+                               onchange="updateCrewTime(1, 'endTime', this.value)">
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        // عرض مفصل لعدة منظمين
+        container.innerHTML = crewMembers.map((member, index) => `
+            <div class="crew-member">
+                <div class="crew-member-header">
+                    <span class="crew-member-title"> منظم #${index + 1}</span>
+                    <button class="btn-remove-crew" onclick="removeCrewMember(${member.id})">️ حذف</button>
+                </div>
+                <div class="crew-time-grid">
+                    <div>
+                        <label>⏰ البداية</label>
+                        <input type="time" id="crewStartTime_${member.id}" 
+                               value="${member.startTime}" 
+                               onchange="updateCrewTime(${member.id}, 'startTime', this.value)">
+                    </div>
+                    <div>
+                        <label>⏰ النهاية</label>
+                        <input type="time" id="crewEndTime_${member.id}" 
+                               value="${member.endTime}" 
+                               onchange="updateCrewTime(${member.id}, 'endTime', this.value)">
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
     
-    const [startH, startM] = startVal.split(':').map(Number);
-    const [endH, endM] = endVal.split(':').map(Number);
+    document.getElementById('totalCrewCount').textContent = crewMembers.length;
+}
+
+function resetToSingleCrew() {
+    if (crewMembers.length > 1 && confirm('العودة إلى منظم واحد فقط؟')) {
+        crewMembers = [{
+            id: 1,
+            startTime: crewMembers[0].startTime,
+            endTime: crewMembers[0].endTime
+        }];
+        renderCrewMembers();
+        doCalc();
+        showToast('🔄 تم العودة إلى منظم واحد');
+    }
+}
+
+function calculateCrewHours() {
     const breakMins = parseInt(document.getElementById('inpBreak').value) || 0;
     const rate = parseFloat(document.getElementById('inpRate').value) || 0;
     const km = parseFloat(document.getElementById('inpKm').value) || 0;
-    
-    const startMins = startH * 60 + startM;
-    const endMins = endH * 60 + endM;
-    
-    let diff = endMins - startMins;
-    if (diff < 0) diff += 24 * 60;
-    
-    let paidMins = diff - breakMins;
-    if (paidMins < 0) paidMins = 0;
-    
-    const hours = Math.round((paidMins / 60) * 2) / 2;
     const transport = km * 0.20;
-    const total = (hours * rate) + transport;
     
-    document.getElementById('liveTotal').textContent = total.toFixed(2);
-    document.getElementById('liveDetail').textContent = `(${hours}س × ${rate}) + (${km}كم × 0.20)`;
-    document.getElementById('liveHours').textContent = `⏱️ الساعات: ${hours.toFixed(1)}`;
+    let totalHours = 0;
+    let crewDetails = [];
+    
+    crewMembers.forEach(member => {
+        if (member.startTime && member.endTime) {
+            const [startH, startM] = member.startTime.split(':').map(Number);
+            const [endH, endM] = member.endTime.split(':').map(Number);
+            
+            const startMins = startH * 60 + startM;
+            const endMins = endH * 60 + endM;
+            
+            let diff = endMins - startMins;
+            if (diff < 0) diff += 24 * 60;
+            
+            let paidMins = diff - breakMins;
+            if (paidMins < 0) paidMins = 0;
+            
+            const hours = Math.round((paidMins / 60) * 2) / 2;
+            totalHours += hours;
+            crewDetails.push({ ...member, hours });
+        }
+    });
+    
+    const totalAmount = (totalHours * rate) + transport;
+    
+    return {
+        totalHours,
+        totalAmount,
+        transport,
+        crewDetails,
+        rate,
+        km
+    };
 }
 
-// ✅ دالة موحدة للإضافة والتحديث
+function doCalc() {
+    const result = calculateCrewHours();
+    
+    document.getElementById('liveTotal').textContent = result.totalAmount.toFixed(2);
+    document.getElementById('liveDetail').textContent = 
+        `(${result.totalHours}س × ${result.rate}) + (${result.km}كم × 0.20)`;
+    document.getElementById('liveHours').textContent = `⏱️ الساعات: ${result.totalHours.toFixed(1)}`;
+    
+    // عرض معلومات المنظمين
+    if (crewMembers.length > 1) {
+        document.getElementById('totalCrewHours').textContent = result.totalHours.toFixed(1);
+        document.getElementById('totalCrewAmount').textContent = result.totalAmount.toFixed(2);
+        document.getElementById('totalCrewInfo').style.display = 'block';
+    } else {
+        document.getElementById('totalCrewInfo').style.display = 'none';
+    }
+}
+
 function addOrUpdateEntry() {
     const name = document.getElementById('inpName').value.trim();
     const date = document.getElementById('inpDate').value;
     
     if (!name || !date) { showToast('⚠️ الاسم والتاريخ مطلوبان', true); return; }
-    if (!document.getElementById('inpStartTime').value || !document.getElementById('inpEndTime').value) { 
-        showToast('⚠️ الوقت مطلوب', true); return; 
-    }
     
-    doCalc();
+    const result = calculateCrewHours();
+    if (result.totalHours === 0) { showToast('⚠️ الوقت مطلوب', true); return; }
     
-    const hours = parseFloat(document.getElementById('liveHours').textContent.split(':')[1]) || 0;
-    const total = parseFloat(document.getElementById('liveTotal').textContent) || 0;
     const rate = parseFloat(document.getElementById('inpRate').value) || 0;
     const km = parseFloat(document.getElementById('inpKm').value) || 0;
     const transport = km * 0.20;
@@ -287,14 +496,15 @@ function addOrUpdateEntry() {
         employer: document.getElementById('inpEmployer').value.trim(),
         employerPhone: document.getElementById('inpEmployerPhone').value.trim(),
         loc: document.getElementById('inpLoc').value.trim(),
-        rate, km, transport, total, hours,
-        startTime: document.getElementById('inpStartTime').value,
-        endTime: document.getElementById('inpEndTime').value,
+        rate, km, transport,
+        total: result.totalAmount,
+        hours: result.totalHours,
+        crewCount: crewMembers.length,
+        crewDetails: result.crewDetails,
         breakMins: parseInt(document.getElementById('inpBreak').value) || 0,
         notes: document.getElementById('inpNotes').value.trim()
     };
     
-    // ✅ إذا كنا في وضع التعديل
     if (editingId !== null) {
         const idx = entries.findIndex(e => e.id === editingId);
         if (idx !== -1) {
@@ -303,87 +513,86 @@ function addOrUpdateEntry() {
         }
         cancelEdit();
     } else {
-        // ✅ إضافة جديد
         entryData.id = Date.now();
         entryData.createdAt = new Date().toISOString();
         entries.push(entryData);
-        showToast('✅ تم إضافة الإدخال!');
+        showToast(`✅ تم إضافة الإدخال! (${crewMembers.length} منظم)`);
     }
     
-    // تحديث القوائم
     names.add(name);
     if (entryData.loc) locs.add(entryData.loc);
     if (entryData.employer) employers.add(entryData.employer);
     
     saveData();
     updateUI();
-    
-    // تفريغ الحقول
     clearForm();
 }
 
-// ✅ تحميل بيانات الإدخال للتعديل
 function editEntry(id) {
     const entry = entries.find(e => e.id === id);
     if (!entry) { showToast('⚠️ الإدخال غير موجود', true); return; }
     
-    // تعبئة الحقول
     document.getElementById('inpName').value = entry.name || '';
     document.getElementById('inpEmployer').value = entry.employer || '';
     document.getElementById('inpEmployerPhone').value = entry.employerPhone || '';
     document.getElementById('inpDate').value = entry.date || '';
-    document.getElementById('inpStartTime').value = entry.startTime || '';
-    document.getElementById('inpEndTime').value = entry.endTime || '';
     document.getElementById('inpBreak').value = entry.breakMins || 0;
     document.getElementById('inpLoc').value = entry.loc || '';
     document.getElementById('inpRate').value = entry.rate || 0;
     document.getElementById('inpKm').value = entry.km || 0;
     document.getElementById('inpNotes').value = entry.notes || '';
     
-    // تفعيل وضع التعديل
-    editingId = id;
+    // استعادة بيانات المنظمين
+    if (entry.crewDetails && entry.crewDetails.length > 0) {
+        crewMembers = entry.crewDetails.map(c => ({
+            id: c.id || Math.random(),
+            startTime: c.startTime || '08:00',
+            endTime: c.endTime || '16:00'
+        }));
+    } else {
+        crewMembers = [{
+            id: 1,
+            startTime: entry.startTime || '08:00',
+            endTime: entry.endTime || '16:00'
+        }];
+    }
     
-    // تغيير الزر
+    renderCrewMembers();
+    
+    editingId = id;
     const addBtn = document.getElementById('addBtn');
     addBtn.textContent = '💾 حفظ التعديلات';
     addBtn.className = 'btn-update';
     
-    // إظهار شريط التعديل
     document.getElementById('editingInfo').textContent = `${entry.name} - ${entry.date} (€${entry.total.toFixed(2)})`;
     document.getElementById('editingBanner').classList.add('show');
     
-    // التمرير للأعلى
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    
     doCalc();
     showToast('✏️ عدّل البيانات ثم اضغط "حفظ التعديلات"');
 }
 
-// ✅ إلغاء وضع التعديل
 function cancelEdit() {
     editingId = null;
-    
     const addBtn = document.getElementById('addBtn');
     addBtn.textContent = '➕ إضافة يوم';
     addBtn.className = 'btn-add';
-    
     document.getElementById('editingBanner').classList.remove('show');
-    
     clearForm();
-    showToast(' تم إلغاء التعديل');
+    showToast('🔄 تم إلغاء التعديل');
 }
 
-// ✅ تفريغ الحقول
 function clearForm() {
     document.getElementById('inpDate').value = '';
     document.getElementById('inpNotes').value = '';
     document.getElementById('inpKm').value = '';
     document.getElementById('inpBreak').value = '0';
     document.getElementById('inpEmployerPhone').value = '';
+    crewMembers = [{ id: 1, startTime: '08:00', endTime: '16:00' }];
+    renderCrewMembers();
     doCalc();
 }
 
-// ✅ حذف إدخال
 function deleteEntry(id) {
     const entry = entries.find(e => e.id === id);
     if (!entry) return;
@@ -395,16 +604,16 @@ function deleteEntry(id) {
     updateUI();
     showToast('🗑️ تم الحذف');
     
-    // إذا كنا نعدّل نفس الإدخال المحذوف
     if (editingId === id) cancelEdit();
 }
 
 function updateUI() {
     const totalEarnings = entries.reduce((sum, e) => sum + e.total, 0);
     const totalHours = entries.reduce((sum, e) => sum + e.hours, 0);
+    const totalCrewMembers = entries.reduce((sum, e) => sum + (e.crewCount || 1), 0);
     
     document.getElementById('statsBar').innerHTML = `
-        📊 ${entries.length} يوم | ⏱️ ${totalHours.toFixed(1)}س | 💵 €${totalEarnings.toFixed(2)}
+        📊 ${entries.length} يوم | 👥 ${totalCrewMembers} منظم | ⏱️ ${totalHours.toFixed(1)}س | 💵 €${totalEarnings.toFixed(2)}
     `;
     
     document.getElementById('entryCount').textContent = entries.length;
@@ -418,13 +627,20 @@ function updateUI() {
         listEl.innerHTML = sorted.map(e => `
             <div class="entry-item">
                 <div class="info">
-                    <div class="name">${e.name} - ${e.date}</div>
-                    <div class="details">
-                         ${e.startTime} - ${e.endTime} | ⏱️ ${e.hours}س | 🚗 ${e.km}كم
-                        ${e.loc ? '| 📍 ' + e.loc : ''}
-                        ${e.employer ? '| 🏢 ' + e.employer : ''}
+                    <div class="name">
+                        ${e.name} - ${e.date}
+                        ${e.crewCount > 1 ? `<span class="crew-badge">${e.crewCount} منظمين</span>` : ''}
                     </div>
-                    ${e.notes ? `<div class="details">📝 ${e.notes}</div>` : ''}
+                    <div class="details">
+                        ${e.crewCount > 1 ? 
+                            e.crewDetails.map((c, i) => 
+                                `👤${i+1}: ${c.startTime}-${c.endTime}`
+                            ).join(' | ') :
+                            `⏰ ${e.crewDetails ? e.crewDetails[0].startTime : ''} - ${e.crewDetails ? e.crewDetails[0].endTime : ''}`
+                        } | ⏱️ ${e.hours}س | 🚗 ${e.km}كم
+                    </div>
+                    ${e.loc ? `<div class="details">📍 ${e.loc}</div>` : ''}
+                    ${e.employer ? `<div class="details">🏢 ${e.employer}</div>` : ''}
                 </div>
                 <div class="amount">€${e.total.toFixed(2)}</div>
                 <div class="entry-actions">
@@ -457,8 +673,8 @@ function updateDatalists() {
 }
 
 function exportBackup() {
-    if (entries.length === 0) { showToast('⚠️ لا توجد بيانات', true); return; }
-    const data = { entries, names: [...names], locs: [...locs], employers: [...employers], exportDate: new Date().toISOString(), version: '5.1' };
+    if (entries.length === 0) { showToast('️ لا توجد بيانات', true); return; }
+    const data = { entries, names: [...names], locs: [...locs], employers: [...employers], exportDate: new Date().toISOString(), version: '5.2' };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -488,6 +704,7 @@ function importBackup(input) {
             if (data.employers) data.employers.forEach(e => employers.add(e));
             saveData();
             updateUI();
+            initCrewSystem();
             showToast(`✅ تم استيراد ${imported} إدخال`);
         } catch (err) { showToast('⚠️ ملف غير صالح', true); }
         input.value = '';
@@ -496,7 +713,7 @@ function importBackup(input) {
 }
 
 function clearAllData() {
-    if (!confirm('⚠️ حذف جميع البيانات؟')) return;
+    if (!confirm('️ حذف جميع البيانات؟')) return;
     if (!confirm('تأكيد نهائي؟')) return;
     entries = []; names.clear(); locs.clear(); employers.clear();
     localStorage.removeItem(STORAGE_KEY);
@@ -525,7 +742,7 @@ function generatePDF() {
         return true;
     }).sort((a, b) => new Date(a.date) - new Date(b.date));
     
-    if (filtered.length === 0) { showToast('️ لا توجد بيانات', true); return; }
+    if (filtered.length === 0) { showToast('⚠️ لا توجد بيانات', true); return; }
     
     showToast('⏳ Generating PDF...');
     const { jsPDF } = window.jspdf;
@@ -536,21 +753,22 @@ function generatePDF() {
     doc.text(sel !== 'all' ? `Werkgever: ${sel}` : 'Alle Werkgevers', 105, 30, { align: 'center' });
     if (from) doc.text(`Periode: ${from} - ${to}`, 105, 37, { align: 'center' });
     
-    let grandTotal = 0, grandHours = 0;
+    let grandTotal = 0, grandHours = 0, totalCrew = 0;
     const tableData = filtered.map(e => {
-        grandTotal += e.total; grandHours += e.hours;
-        return [e.date, e.loc || '-', e.startTime, e.endTime, `${e.breakMins} min`, `${e.hours} uur`, `€ ${e.rate.toFixed(2)}`, `€ ${e.total.toFixed(2)}`];
+        grandTotal += e.total; grandHours += e.hours; totalCrew += (e.crewCount || 1);
+        const crewInfo = e.crewCount > 1 ? `${e.crewCount} persons` : '';
+        return [e.date, e.loc || '-', e.crewDetails ? e.crewDetails[0].startTime : '', e.crewDetails ? e.crewDetails[0].endTime : '', `${e.breakMins}m`, `${e.hours}h ${crewInfo}`, `€ ${e.rate.toFixed(2)}`, `€ ${e.total.toFixed(2)}`];
     });
     
     doc.autoTable({
         startY: from ? 45 : 38,
-        head: [['Datum', 'Locatie', 'Start', 'Eind', 'Pauze', 'Uren', 'Tarief', 'Totaal']],
+        head: [['Datum', 'Locatie', 'Start', 'Eind', 'Pauze', 'Uren/Crew', 'Tarief', 'Totaal']],
         body: tableData,
         theme: 'grid',
         headStyles: { fillColor: [56, 189, 248], textColor: [0, 0, 0], fontStyle: 'bold' },
         foot: [[
             { content: 'Totaal', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
-            { content: `${grandHours.toFixed(1)} uur`, styles: { fontStyle: 'bold' } },
+            { content: `${grandHours.toFixed(1)}h (${totalCrew} crew)`, styles: { fontStyle: 'bold' } },
             '-',
             { content: `€ ${grandTotal.toFixed(2)}`, styles: { fontStyle: 'bold', fontSize: 12 } }
         ]]
@@ -571,10 +789,7 @@ window.onload = function() {
     const today = new Date();
     document.getElementById('inpDate').value = today.toISOString().split('T')[0];
     document.getElementById('inpMonth').value = today.toISOString().slice(0, 7);
-    if (!document.getElementById('inpStartTime').value) document.getElementById('inpStartTime').value = '08:00';
-    if (!document.getElementById('inpEndTime').value) document.getElementById('inpEndTime').value = '16:00';
     loadData();
-    doCalc();
 };
 
 window.onbeforeunload = function() {
