@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نظام الأجور - GO v5.1 EDIT</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root { --bg: #0b1120; --card: #1e293b; --accent: #38bdf8; --purple: #8b5cf6; --green: #10b981; --red: #ef4444; --orange: #f59e0b; --text: #e2e8f0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { font-family: Tahoma, Arial, sans-serif; background: var(--bg); color: var(--text); padding: 12px; line-height: 1.6; padding-bottom: 100px; }
+        .container { max-width: 100%; margin: 0 auto; }
+        h1 { text-align: center; color: var(--accent); margin: 10px 0 15px; font-size: 1.5em; }
+        .tag { background: var(--purple); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.7em; }
+        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #334155; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+        @media (max-width: 480px) { .grid { grid-template-columns: 1fr 1fr; } }
+        label { display: block; margin-bottom: 5px; font-size: 0.85em; color: #94a3b8; }
+        
+        input, textarea, select { 
+            width: 100%; padding: 12px 10px; border: 1px solid #475569; border-radius: 10px; 
+            background: #0f172a; color: #fff; font-size: 16px; direction: rtl; font-family: inherit; 
+            touch-action: manipulation; -webkit-appearance: none;
+        }
+        textarea { min-height: 50px; resize: vertical; }
+        input[type="time"], input[type="date"], input[type="month"] { direction: ltr !important; text-align: center; }
+        
+        .live-box { grid-column: 1/-1; background: #0f172a; padding: 14px; border-radius: 10px; text-align: center; margin-top: 8px; border: 2px solid var(--accent); }
+        .live-box span { color: var(--accent); font-size: 1.4em; font-weight: bold; }
+        .live-box small { display: block; color: #64748b; margin-top: 4px; }
+        
+        .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+        button { flex: 1; min-width: 120px; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 0.95em; color: #fff; touch-action: manipulation; }
+        button:active { transform: scale(0.96); }
+        .btn-add { background: var(--accent); color: #0b1120; }
+        .btn-update { background: linear-gradient(135deg, var(--orange), #d97706); color: #0b1120; }
+        .btn-save { background: linear-gradient(135deg, var(--green), #059669); }
+        .btn-pdf { background: var(--purple); }
+        .btn-util { background: #64748b; }
+        .btn-backup { background: linear-gradient(135deg, #f59e0b, #d97706); color: #0b1120; }
+        .btn-cancel { background: var(--red); }
+        
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--green); color: #fff; padding: 12px 20px; border-radius: 10px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; font-weight: bold; text-align: center; width: 90%; max-width: 400px; }
+        .toast.show { opacity: 1; }
+        .toast.err { background: var(--red); }
+        
+        .auto-save-indicator { 
+            position: fixed; bottom: 80px; left: 15px; 
+            background: rgba(16, 185, 129, 0.2); 
+            border: 1px solid var(--green); 
+            color: var(--green); 
+            padding: 8px 12px; 
+            border-radius: 20px; 
+            font-size: 0.85em; 
+            display: flex; align-items: center; gap: 6px;
+        }
+        
+        /* ✅ شريط وضع التعديل */
+        .editing-banner {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2));
+            border: 2px solid var(--orange);
+            color: var(--orange);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+            animation: pulse 1.5s infinite;
+        }
+        .editing-banner.show { display: block; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        
+        .entries-list { margin-top: 10px; }
+        .entry-item { 
+            background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 8px; 
+            border-right: 3px solid var(--accent);
+        }
+        .entry-item .info { margin-bottom: 8px; }
+        .entry-item .name { font-weight:bold; color:var(--accent); }
+        .entry-item .details { font-size:0.85em; color:#94a3b8; margin-top:4px; }
+        .entry-item .amount { color: var(--green); font-weight: bold; font-size: 1.1em; }
+        
+        /* ✅ أزرار التعديل والحذف */
+        .entry-actions { 
+            display: flex; gap: 6px; margin-top: 8px; 
+            justify-content: flex-end;
+        }
+        .btn-edit-entry { 
+            background: var(--orange); color: #0b1120; 
+            padding: 6px 12px; border-radius: 6px; 
+            border: none; font-size: 0.85em; font-weight: bold; cursor: pointer;
+        }
+        .btn-delete-entry { 
+            background: var(--red); color: #fff; 
+            padding: 6px 12px; border-radius: 6px; 
+            border: none; font-size: 0.85em; font-weight: bold; cursor: pointer;
+        }
+        
+        .stats-bar { background: rgba(56, 189, 248, 0.1); border: 1px solid var(--accent); padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center; }
+        
+        .dr-badge { position: fixed; bottom: 15px; left: 15px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; padding: 8px 14px; border-radius: 20px; font-size: 0.85em; font-weight: bold; z-index: 999; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📊 نظام الأجور <span class="tag">GO v5.1</span></h1>
+    
+    <div class="auto-save-indicator">
+        <span>💾</span>
+        <span>حفظ تلقائي</span>
+    </div>
+    
+    <div class="stats-bar" id="statsBar">📊 جاري التحميل...</div>
+    
+    <!-- ✅ شريط وضع التعديل -->
+    <div id="editingBanner" class="editing-banner">
+        ✏️ وضع التعديل: <span id="editingInfo"></span>
+        <br>
+        <button class="btn-cancel" onclick="cancelEdit()" style="margin-top:8px;padding:6px 15px;font-size:0.85em;">❌ إلغاء التعديل</button>
+    </div>
+    
+    <div class="card">
+        <h3 style="color:var(--green);margin-bottom:10px;">💾 إدارة البيانات</h3>
+        <div class="btns">
+            <button onclick="exportBackup()" class="btn-backup"> نسخة احتياطية</button>
+            <button onclick="document.getElementById('importFile').click()" class="btn-util">📥 استيراد</button>
+            <button onclick="clearAllData()" class="btn-util">🗑️ مسح الكل</button>
+        </div>
+        <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importBackup(this)">
+    </div>
+    
+    <div class="card">
+        <div class="grid">
+            <div><label>👤 الاسم</label><input type="text" id="inpName" list="nameList"></div>
+            <datalist id="nameList"></datalist>
+            <div><label> صاحب العمل</label><input type="text" id="inpEmployer" list="employerList"></div>
+            <datalist id="employerList"></datalist>
+            <div><label>📱 الهاتف</label><input type="text" id="inpEmployerPhone" placeholder="0612345678"></div>
+            <div><label>📅 الشهر</label><input type="month" id="inpMonth"></div>
+            <div><label>📅 التاريخ</label><input type="date" id="inpDate"></div>
+            
+            <div><label>⏰ البداية</label><input type="time" id="inpStartTime" onchange="doCalc()" ontouchend="doCalc()"></div>
+            <div><label> النهاية</label><input type="time" id="inpEndTime" onchange="doCalc()" ontouchend="doCalc()"></div>
+            
+            <div><label>☕ استراحة</label>
+                <select id="inpBreak" onchange="doCalc()">
+                    <option value="0">0 min</option>
+                    <option value="15">15 min</option>
+                    <option value="30">30 min</option>
+                    <option value="45">45 min</option>
+                    <option value="60">60 min</option>
+                </select>
+            </div>
+            <div><label>📍 المكان</label><input type="text" id="inpLoc" list="locList"></div>
+            <datalist id="locList"></datalist>
+            <div><label>💰 السعر/ساعة</label><input type="number" id="inpRate" step="0.5" oninput="doCalc()"></div>
+            <div><label>🚗 كم</label><input type="number" id="inpKm" step="0.5" oninput="doCalc()"></div>
+            <div style="grid-column:1/-1;"><label>📝 ملاحظات</label><textarea id="inpNotes"></textarea></div>
+        </div>
+        
+        <div class="live-box">
+            💵 اليومي: <span id="liveTotal">0.00</span>
+            <small id="liveDetail">أدخل البيانات</small>
+            <small id="liveHours" style="color:var(--accent);">⏱️ الساعات: 0.0</small>
+        </div>
+        
+        <div class="btns">
+            <button id="addBtn" class="btn-add" onclick="addOrUpdateEntry()">➕ إضافة يوم</button>
+            <button class="btn-util" onclick="clearLists()">🧹 مسح القوائم</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="color:var(--purple);margin-bottom:10px;">📋 الإدخالات المحفوظة (<span id="entryCount">0</span>)</h3>
+        <div id="entriesList" class="entries-list">
+            <div style="text-align:center;color:#64748b;padding:20px;">لا توجد إدخالات</div>
+        </div>
+    </div>
+
+    <div class="card" style="direction:ltr;text-align:left;">
+        <h3 style="color:var(--purple);margin-bottom:12px;">🇳🇱 Factuur</h3>
+        <div class="grid">
+            <div><label>Werkgever:</label><select id="dutchEmployerSelect"><option value="all">Alle</option></select></div>
+            <div><label>Van:</label><input type="date" id="dutchFrom"></div>
+            <div><label>Tot:</label><input type="date" id="dutchTo"></div>
+        </div>
+        <button class="btn-pdf" style="width:100%;margin-top:10px;" onclick="generatePDF()">📥 PDF Factuur</button>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<div class="dr-badge">⚙️ د. عبدالله</div>
+
+<script>
+let entries = [];
+let names = new Set();
+let locs = new Set();
+let employers = new Set();
+const STORAGE_KEY = 'GO_WAGES_DATA_v5_1';
+
+// ✅ متغير لتتبع وضع التعديل
+let editingId = null;
+
+function loadData() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const data = JSON.parse(saved);
+            entries = data.entries || [];
+            names = new Set(data.names || []);
+            locs = new Set(data.locs || []);
+            employers = new Set(data.employers || []);
+            showToast(`📥 تم تحميل ${entries.length} إدخال`);
+        }
+    } catch (e) { console.error('خطأ في التحميل:', e); }
+    updateUI();
+}
+
+function saveData() {
+    try {
+        const data = {
+            entries, names: [...names], locs: [...locs], employers: [...employers],
+            lastSave: new Date().toISOString()
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) { console.error('خطأ في الحفظ:', e); }
+}
+
+function doCalc() {
+    const startVal = document.getElementById('inpStartTime').value;
+    const endVal = document.getElementById('inpEndTime').value;
+    
+    if (!startVal || !endVal) {
+        document.getElementById('liveTotal').textContent = '0.00';
+        document.getElementById('liveHours').textContent = '⏱️ الساعات: 0.0';
+        document.getElementById('liveDetail').textContent = 'أدخل البيانات';
+        return;
+    }
+    
+    const [startH, startM] = startVal.split(':').map(Number);
+    const [endH, endM] = endVal.split(':').map(Number);
+    const breakMins = parseInt(document.getElementById('inpBreak').value) || 0;
+    const rate = parseFloat(document.getElementById('inpRate').value) || 0;
+    const km = parseFloat(document.getElementById('inpKm').value) || 0;
+    
+    const startMins = startH * 60 + startM;
+    const endMins = endH * 60 + endM;
+    
+    let diff = endMins - startMins;
+    if (diff < 0) diff += 24 * 60;
+    
+    let paidMins = diff - breakMins;
+    if (paidMins < 0) paidMins = 0;
+    
+    const hours = Math.round((paidMins / 60) * 2) / 2;
+    const transport = km * 0.20;
+    const total = (hours * rate) + transport;
+    
+    document.getElementById('liveTotal').textContent = total.toFixed(2);
+    document.getElementById('liveDetail').textContent = `(${hours}س × ${rate}) + (${km}كم × 0.20)`;
+    document.getElementById('liveHours').textContent = `⏱️ الساعات: ${hours.toFixed(1)}`;
+}
+
+// ✅ دالة موحدة للإضافة والتحديث
+function addOrUpdateEntry() {
+    const name = document.getElementById('inpName').value.trim();
+    const date = document.getElementById('inpDate').value;
+    
+    if (!name || !date) { showToast('⚠️ الاسم والتاريخ مطلوبان', true); return; }
+    if (!document.getElementById('inpStartTime').value || !document.getElementById('inpEndTime').value) { 
+        showToast('⚠️ الوقت مطلوب', true); return; 
+    }
+    
+    doCalc();
+    
+    const hours = parseFloat(document.getElementById('liveHours').textContent.split(':')[1]) || 0;
+    const total = parseFloat(document.getElementById('liveTotal').textContent) || 0;
+    const rate = parseFloat(document.getElementById('inpRate').value) || 0;
+    const km = parseFloat(document.getElementById('inpKm').value) || 0;
+    const transport = km * 0.20;
+    
+    const entryData = {
+        name, date,
+        employer: document.getElementById('inpEmployer').value.trim(),
+        employerPhone: document.getElementById('inpEmployerPhone').value.trim(),
+        loc: document.getElementById('inpLoc').value.trim(),
+        rate, km, transport, total, hours,
+        startTime: document.getElementById('inpStartTime').value,
+        endTime: document.getElementById('inpEndTime').value,
+        breakMins: parseInt(document.getElementById('inpBreak').value) || 0,
+        notes: document.getElementById('inpNotes').value.trim()
+    };
+    
+    // ✅ إذا كنا في وضع التعديل
+    if (editingId !== null) {
+        const idx = entries.findIndex(e => e.id === editingId);
+        if (idx !== -1) {
+            entries[idx] = { ...entries[idx], ...entryData, updatedAt: new Date().toISOString() };
+            showToast('✅ تم تحديث الإدخال بنجاح!');
+        }
+        cancelEdit();
+    } else {
+        // ✅ إضافة جديد
+        entryData.id = Date.now();
+        entryData.createdAt = new Date().toISOString();
+        entries.push(entryData);
+        showToast('✅ تم إضافة الإدخال!');
+    }
+    
+    // تحديث القوائم
+    names.add(name);
+    if (entryData.loc) locs.add(entryData.loc);
+    if (entryData.employer) employers.add(entryData.employer);
+    
+    saveData();
+    updateUI();
+    
+    // تفريغ الحقول
+    clearForm();
+}
+
+// ✅ تحميل بيانات الإدخال للتعديل
+function editEntry(id) {
+    const entry = entries.find(e => e.id === id);
+    if (!entry) { showToast('⚠️ الإدخال غير موجود', true); return; }
+    
+    // تعبئة الحقول
+    document.getElementById('inpName').value = entry.name || '';
+    document.getElementById('inpEmployer').value = entry.employer || '';
+    document.getElementById('inpEmployerPhone').value = entry.employerPhone || '';
+    document.getElementById('inpDate').value = entry.date || '';
+    document.getElementById('inpStartTime').value = entry.startTime || '';
+    document.getElementById('inpEndTime').value = entry.endTime || '';
+    document.getElementById('inpBreak').value = entry.breakMins || 0;
+    document.getElementById('inpLoc').value = entry.loc || '';
+    document.getElementById('inpRate').value = entry.rate || 0;
+    document.getElementById('inpKm').value = entry.km || 0;
+    document.getElementById('inpNotes').value = entry.notes || '';
+    
+    // تفعيل وضع التعديل
+    editingId = id;
+    
+    // تغيير الزر
+    const addBtn = document.getElementById('addBtn');
+    addBtn.textContent = '💾 حفظ التعديلات';
+    addBtn.className = 'btn-update';
+    
+    // إظهار شريط التعديل
+    document.getElementById('editingInfo').textContent = `${entry.name} - ${entry.date} (€${entry.total.toFixed(2)})`;
+    document.getElementById('editingBanner').classList.add('show');
+    
+    // التمرير للأعلى
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    doCalc();
+    showToast('✏️ عدّل البيانات ثم اضغط "حفظ التعديلات"');
+}
+
+// ✅ إلغاء وضع التعديل
+function cancelEdit() {
+    editingId = null;
+    
+    const addBtn = document.getElementById('addBtn');
+    addBtn.textContent = '➕ إضافة يوم';
+    addBtn.className = 'btn-add';
+    
+    document.getElementById('editingBanner').classList.remove('show');
+    
+    clearForm();
+    showToast(' تم إلغاء التعديل');
+}
+
+// ✅ تفريغ الحقول
+function clearForm() {
+    document.getElementById('inpDate').value = '';
+    document.getElementById('inpNotes').value = '';
+    document.getElementById('inpKm').value = '';
+    document.getElementById('inpBreak').value = '0';
+    document.getElementById('inpEmployerPhone').value = '';
+    doCalc();
+}
+
+// ✅ حذف إدخال
+function deleteEntry(id) {
+    const entry = entries.find(e => e.id === id);
+    if (!entry) return;
+    
+    if (!confirm(`حذف إدخال ${entry.name} - ${entry.date}؟\nالمبلغ: €${entry.total.toFixed(2)}`)) return;
+    
+    entries = entries.filter(e => e.id !== id);
+    saveData();
+    updateUI();
+    showToast('🗑️ تم الحذف');
+    
+    // إذا كنا نعدّل نفس الإدخال المحذوف
+    if (editingId === id) cancelEdit();
+}
+
+function updateUI() {
+    const totalEarnings = entries.reduce((sum, e) => sum + e.total, 0);
+    const totalHours = entries.reduce((sum, e) => sum + e.hours, 0);
+    
+    document.getElementById('statsBar').innerHTML = `
+        📊 ${entries.length} يوم | ⏱️ ${totalHours.toFixed(1)}س | 💵 €${totalEarnings.toFixed(2)}
+    `;
+    
+    document.getElementById('entryCount').textContent = entries.length;
+    
+    const listEl = document.getElementById('entriesList');
+    if (entries.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center;color:#64748b;padding:20px;">لا توجد إدخالات</div>';
+    } else {
+        const sorted = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        listEl.innerHTML = sorted.map(e => `
+            <div class="entry-item">
+                <div class="info">
+                    <div class="name">${e.name} - ${e.date}</div>
+                    <div class="details">
+                         ${e.startTime} - ${e.endTime} | ⏱️ ${e.hours}س | 🚗 ${e.km}كم
+                        ${e.loc ? '| 📍 ' + e.loc : ''}
+                        ${e.employer ? '| 🏢 ' + e.employer : ''}
+                    </div>
+                    ${e.notes ? `<div class="details">📝 ${e.notes}</div>` : ''}
+                </div>
+                <div class="amount">€${e.total.toFixed(2)}</div>
+                <div class="entry-actions">
+                    <button class="btn-edit-entry" onclick="editEntry(${e.id})">✏️ تعديل</button>
+                    <button class="btn-delete-entry" onclick="deleteEntry(${e.id})">🗑️ حذف</button>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    updateDatalists();
+}
+
+function updateDatalists() {
+    const nameList = document.getElementById('nameList');
+    nameList.innerHTML = '';
+    names.forEach(n => nameList.appendChild(new Option(n)));
+    
+    const employerList = document.getElementById('employerList');
+    employerList.innerHTML = '';
+    employers.forEach(e => employerList.appendChild(new Option(e)));
+    
+    const locList = document.getElementById('locList');
+    locList.innerHTML = '';
+    locs.forEach(l => locList.appendChild(new Option(l)));
+    
+    const dutchSelect = document.getElementById('dutchEmployerSelect');
+    dutchSelect.innerHTML = '<option value="all">Alle</option>';
+    employers.forEach(e => dutchSelect.appendChild(new Option(e, e)));
+}
+
+function exportBackup() {
+    if (entries.length === 0) { showToast('⚠️ لا توجد بيانات', true); return; }
+    const data = { entries, names: [...names], locs: [...locs], employers: [...employers], exportDate: new Date().toISOString(), version: '5.1' };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `GO_BACKUP_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`✅ تم تصدير ${entries.length} إدخال`);
+}
+
+function importBackup(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!data.entries) throw new Error('Invalid');
+            if (!confirm(`استيراد ${data.entries.length} إدخال؟`)) { input.value = ''; return; }
+            const existingIds = new Set(entries.map(e => e.id));
+            let imported = 0;
+            data.entries.forEach(entry => {
+                if (!existingIds.has(entry.id)) { entries.push(entry); imported++; }
+            });
+            if (data.names) data.names.forEach(n => names.add(n));
+            if (data.locs) data.locs.forEach(l => locs.add(l));
+            if (data.employers) data.employers.forEach(e => employers.add(e));
+            saveData();
+            updateUI();
+            showToast(`✅ تم استيراد ${imported} إدخال`);
+        } catch (err) { showToast('⚠️ ملف غير صالح', true); }
+        input.value = '';
+    };
+    reader.readAsText(file);
+}
+
+function clearAllData() {
+    if (!confirm('⚠️ حذف جميع البيانات؟')) return;
+    if (!confirm('تأكيد نهائي؟')) return;
+    entries = []; names.clear(); locs.clear(); employers.clear();
+    localStorage.removeItem(STORAGE_KEY);
+    cancelEdit();
+    updateUI();
+    showToast('🗑️ تم مسح جميع البيانات');
+}
+
+function clearLists() {
+    if (!confirm('مسح القوائم فقط؟')) return;
+    names.clear(); locs.clear(); employers.clear();
+    saveData();
+    updateUI();
+    showToast('🧹 تم مسح القوائم');
+}
+
+function generatePDF() {
+    const sel = document.getElementById('dutchEmployerSelect').value;
+    const from = document.getElementById('dutchFrom').value;
+    const to = document.getElementById('dutchTo').value;
+    
+    let filtered = entries.filter(e => {
+        if (sel !== 'all' && e.employer !== sel) return false;
+        if (from && e.date < from) return false;
+        if (to && e.date > to) return false;
+        return true;
+    }).sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    if (filtered.length === 0) { showToast('️ لا توجد بيانات', true); return; }
+    
+    showToast('⏳ Generating PDF...');
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    doc.setFontSize(18);
+    doc.text('Factuur / Urenoverzicht', 105, 20, { align: 'center' });
+    doc.setFontSize(11);
+    doc.text(sel !== 'all' ? `Werkgever: ${sel}` : 'Alle Werkgevers', 105, 30, { align: 'center' });
+    if (from) doc.text(`Periode: ${from} - ${to}`, 105, 37, { align: 'center' });
+    
+    let grandTotal = 0, grandHours = 0;
+    const tableData = filtered.map(e => {
+        grandTotal += e.total; grandHours += e.hours;
+        return [e.date, e.loc || '-', e.startTime, e.endTime, `${e.breakMins} min`, `${e.hours} uur`, `€ ${e.rate.toFixed(2)}`, `€ ${e.total.toFixed(2)}`];
+    });
+    
+    doc.autoTable({
+        startY: from ? 45 : 38,
+        head: [['Datum', 'Locatie', 'Start', 'Eind', 'Pauze', 'Uren', 'Tarief', 'Totaal']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: { fillColor: [56, 189, 248], textColor: [0, 0, 0], fontStyle: 'bold' },
+        foot: [[
+            { content: 'Totaal', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+            { content: `${grandHours.toFixed(1)} uur`, styles: { fontStyle: 'bold' } },
+            '-',
+            { content: `€ ${grandTotal.toFixed(2)}`, styles: { fontStyle: 'bold', fontSize: 12 } }
+        ]]
+    });
+    
+    doc.save(`Factuur_${new Date().toISOString().split('T')[0]}.pdf`);
+    showToast('✅ PDF تم إنشاؤه!');
+}
+
+function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' err' : '');
+    setTimeout(() => t.className = 'toast', 3000);
+}
+
+window.onload = function() {
+    const today = new Date();
+    document.getElementById('inpDate').value = today.toISOString().split('T')[0];
+    document.getElementById('inpMonth').value = today.toISOString().slice(0, 7);
+    if (!document.getElementById('inpStartTime').value) document.getElementById('inpStartTime').value = '08:00';
+    if (!document.getElementById('inpEndTime').value) document.getElementById('inpEndTime').value = '16:00';
+    loadData();
+    doCalc();
+};
+
+window.onbeforeunload = function() {
+    if (entries.length > 0) saveData();
+};
+</script>
+
+</body>
+</html>
