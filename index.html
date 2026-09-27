@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>نظام الأجور - GO v5.5 FINAL</title>
+    <title>نظام الأجور - GO v3.8</title>
+    <!-- ✅ مكتبات jsPDF و autotable - أكثر موثوقية -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <style>
-        :root { --bg: #0b1120; --card: #1e293b; --accent: #38bdf8; --purple: #8b5cf6; --green: #10b981; --red: #ef4444; --orange: #f59e0b; --text: #e2e8f0; }
+        :root { --bg: #0b1120; --card: #1e293b; --accent: #38bdf8; --purple: #8b5cf6; --red: #ef4444; --green: #10b981; --text: #e2e8f0; --paid: #22c55e; --unpaid: #f59e0b; --partial: #3b82f6; }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { font-family: Tahoma, Arial, sans-serif; background: var(--bg); color: var(--text); padding: 12px; line-height: 1.6; padding-bottom: 100px; }
+        body { font-family: Tahoma, Arial, sans-serif; background: var(--bg); color: var(--text); padding: 12px; line-height: 1.6; padding-bottom: 80px; }
         .container { max-width: 100%; margin: 0 auto; }
         h1 { text-align: center; color: var(--accent); margin: 10px 0 15px; font-size: 1.5em; }
         .tag { background: var(--purple); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.7em; }
@@ -18,181 +19,118 @@
         @media (max-width: 480px) { .grid { grid-template-columns: 1fr 1fr; } }
         label { display: block; margin-bottom: 5px; font-size: 0.85em; color: #94a3b8; }
         
+        /* ✅ إصلاح الآيفون: حجم خط 16px يمنع التكبير التلقائي المعطل، و touch-action يحسن اللمس */
         input, textarea, select { 
-            width: 100%; padding: 12px 10px; border: 1px solid #475569; border-radius: 10px; 
-            background: #0f172a; color: #fff; font-size: 16px; direction: rtl; font-family: inherit; 
-            touch-action: manipulation; -webkit-appearance: none;
+            width: 100%; 
+            padding: 12px 10px; 
+            border: 1px solid #475569; 
+            border-radius: 10px; 
+            background: #0f172a; 
+            color: #fff; 
+            font-size: 16px; 
+            direction: rtl; 
+            font-family: inherit; 
+            touch-action: manipulation;
         }
         textarea { min-height: 50px; resize: vertical; }
-        input[type="time"], input[type="date"], input[type="month"] { direction: ltr !important; text-align: center; }
         
-        .live-box { grid-column: 1/-1; background: #0f172a; padding: 14px; border-radius: 10px; text-align: center; margin-top: 8px; border: 2px solid var(--accent); }
+        .time-wrapper { display: flex; gap: 6px; align-items: flex-end; }
+        .time-wrapper select { flex: 1; }
+        .time-wrapper .colon { align-self: center; font-size: 1.2em; color: #64748b; padding-bottom: 12px; }
+        
+        .live-box { grid-column: 1/-1; background: #0f172a; padding: 14px; border-radius: 10px; text-align: center; margin-top: 8px; border: 1px dashed #475569; }
         .live-box span { color: var(--accent); font-size: 1.4em; font-weight: bold; }
         .live-box small { display: block; color: #64748b; margin-top: 4px; }
         
         .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
         button { flex: 1; min-width: 120px; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 0.95em; color: #fff; touch-action: manipulation; }
-        button:active { transform: scale(0.96); }
         .btn-add { background: var(--accent); color: #0b1120; }
-        .btn-update { background: linear-gradient(135deg, var(--orange), #d97706); color: #0b1120; }
+        .btn-update { background: linear-gradient(135deg, #f59e0b, #d97706); color: #0b1120; }
         .btn-save { background: linear-gradient(135deg, var(--green), #059669); }
         .btn-pdf { background: var(--purple); }
+        .btn-del { background: var(--red); }
         .btn-util { background: #64748b; }
-        .btn-backup { background: linear-gradient(135deg, #f59e0b, #d97706); color: #0b1120; }
-        .btn-cancel { background: var(--red); }
-        .btn-crew { background: linear-gradient(135deg, #ec4899, #be185d); }
+        .btn-paid { background: #22c55e; color: #0b1120; }
+        .btn-edit { background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85em; margin-left: 4px; }
+        .btn-cancel { background: #64748b; }
         
-        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--green); color: #fff; padding: 12px 20px; border-radius: 10px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; font-weight: bold; text-align: center; width: 90%; max-width: 400px; }
+        .empty { text-align: center; padding: 40px 20px; color: #64748b; font-size: 1.1em; }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--green); color: #fff; padding: 12px 20px; border-radius: 10px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; font-weight: bold; }
         .toast.show { opacity: 1; }
         .toast.err { background: var(--red); }
         
-        .auto-save-indicator { 
-            position: fixed; bottom: 80px; left: 15px; 
-            background: rgba(16, 185, 129, 0.2); 
-            border: 1px solid var(--green); 
-            color: var(--green); 
-            padding: 8px 12px; 
-            border-radius: 20px; 
-            font-size: 0.85em; 
-            display: flex; align-items: center; gap: 6px;
-        }
+        .data-loaded { background: rgba(34,197,94,0.1); border: 1px solid var(--green); padding: 8px; border-radius: 8px; margin: 10px 0; font-size: 0.85em; color: var(--green); text-align: center; }
+        .unsaved-warning { background: rgba(245,158,11,0.15); border: 1px solid var(--unpaid); padding: 8px; border-radius: 8px; margin: 10px 0; font-size: 0.85em; color: var(--unpaid); text-align: center; animation: pulse 2s infinite; }
+        .editing-banner { background: rgba(245,158,11,0.2); border: 2px solid var(--unpaid); padding: 10px; border-radius: 8px; margin: 10px 0; font-size: 0.9em; color: var(--unpaid); text-align: center; font-weight: bold; }
         
-        .editing-banner {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2));
-            border: 2px solid var(--orange);
-            color: var(--orange);
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 12px;
-            text-align: center;
-            font-weight: bold;
-            display: none;
-        }
-        .editing-banner.show { display: block; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
         
-        .crew-section {
-            background: rgba(236, 72, 153, 0.1);
-            border: 2px solid #ec4899;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
+        @media (max-width: 768px) {
+            h1 { font-size: 1.3em; }
+            .btns { flex-direction: column; }
+            button { width: 100%; }
         }
-        .crew-section h3 { color: #ec4899; margin-bottom: 12px; font-size: 1.1em; }
-        .crew-member {
-            background: #0f172a;
-            border: 1px solid #475569;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 12px;
-        }
-        .crew-member-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #334155;
-        }
-        .crew-member-title { color: #ec4899; font-weight: bold; }
-        .btn-remove-crew {
-            background: var(--red); color: #fff;
-            border: none; padding: 4px 8px;
-            border-radius: 5px; font-size: 0.8em; cursor: pointer;
-        }
-        .crew-time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .total-crew-info {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid var(--green);
-            padding: 10px; border-radius: 8px;
-            margin-top: 10px; text-align: center;
-            color: var(--green); font-weight: bold;
-        }
+
+        .dutch-section { direction: ltr; text-align: left; }
+        .dutch-section label { text-align: left; }
+        .dutch-section input, .dutch-section select { direction: ltr; text-align: left; }
         
-        .entries-list { margin-top: 10px; }
-        .entry-item { 
-            background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 8px; 
-            border-right: 3px solid var(--accent);
+        .dr-badge {
+            position: fixed; bottom: 15px; left: 15px;
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: #fff; padding: 8px 14px; border-radius: 20px;
+            font-size: 0.85em; font-weight: bold;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+            z-index: 999; display: flex; align-items: center; gap: 6px;
+            pointer-events: none; user-select: none;
         }
-        .entry-item .info { margin-bottom: 8px; }
-        .entry-item .name { font-weight:bold; color:var(--accent); }
-        .entry-item .details { font-size:0.85em; color:#94a3b8; margin-top:4px; }
-        .entry-item .amount { color: var(--green); font-weight: bold; font-size: 1.1em; }
-        .crew-badge {
-            display: inline-block;
-            background: #ec4899;
-            color: #fff;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.75em;
-            margin-right: 5px;
-        }
-        
-        .entry-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
-        .btn-edit-entry { background: var(--orange); color: #0b1120; padding: 6px 12px; border-radius: 6px; border: none; font-size: 0.85em; font-weight: bold; cursor: pointer; }
-        .btn-delete-entry { background: var(--red); color: #fff; padding: 6px 12px; border-radius: 6px; border: none; font-size: 0.85em; font-weight: bold; cursor: pointer; }
-        
-        .stats-bar { background: rgba(56, 189, 248, 0.1); border: 1px solid var(--accent); padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center; }
-        
-        .dr-badge { position: fixed; bottom: 15px; left: 15px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; padding: 8px 14px; border-radius: 20px; font-size: 0.85em; font-weight: bold; z-index: 999; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>📊 نظام الأجور <span class="tag">GO v5.5</span></h1>
+    <h1>📊 نظام الأجور <span class="tag">GO v3.8</span></h1>
     
-    <div class="auto-save-indicator">
-        <span>💾</span>
-        <span>حفظ تلقائي معزول</span>
-    </div>
-    
-    <div class="stats-bar" id="statsBar">📊 جاري التحميل...</div>
-    
-    <div id="editingBanner" class="editing-banner">
-        ✏️ وضع التعديل: <span id="editingInfo"></span>
-        <br>
-        <button class="btn-cancel" onclick="cancelEdit()" style="margin-top:8px;padding:6px 15px;font-size:0.85em;">❌ إلغاء التعديل</button>
-    </div>
+    <div id="dataLoadedMsg"></div>
+    <div id="unsavedWarning"></div>
+    <div id="editingBanner"></div>
     
     <div class="card">
-        <h3 style="color:var(--green);margin-bottom:10px;">💾 إدارة البيانات</h3>
-        <div class="btns">
-            <button onclick="exportBackup()" class="btn-backup">📤 نسخة احتياطية</button>
-            <button onclick="document.getElementById('importFile').click()" class="btn-util"> استيراد</button>
-            <button onclick="clearAllData()" class="btn-util">🗑️ مسح الكل</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+            <h3 style="color:var(--green);">💾 البيانات المحفوظة</h3>
+            <div id="statsBar" style="font-size:0.85em;color:#94a3b8;"></div>
         </div>
-        <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importBackup(this)">
+        <div class="btns">
+            <button class="btn-save" onclick="saveToFile()">💾 حفظ في ملف</button>
+            <button class="btn-util" onclick="exportJSON()">📥 تصدير JSON</button>
+            <button class="btn-util" onclick="document.getElementById('impFile').click()">📤 استيراد JSON</button>
+            <button class="btn-util" onclick="clearAllData()">🗑️ مسح الكل</button>
+        </div>
     </div>
     
     <div class="card">
         <div class="grid">
-            <div style="grid-column: 1/-1;"><label>👤 الاسم</label><input type="text" id="inpName" list="nameList"></div>
+            <div><label>👤 الاسم (Naam)</label><input type="text" id="inpName" list="nameList"></div>
             <datalist id="nameList"></datalist>
-            <div style="grid-column: 1/-1;"><label> صاحب العمل</label><input type="text" id="inpEmployer" list="employerList"></div>
+            <div><label>🏢 صاحب العمل (Werkgever)</label><input type="text" id="inpEmployer" list="employerList"></div>
             <datalist id="employerList"></datalist>
-            <div><label>📱 الهاتف</label><input type="text" id="inpEmployerPhone" placeholder="0612345678"></div>
+            <div><label>📱 رقم صاحب العمل (Tel.)</label><input type="text" id="inpEmployerPhone" placeholder="0612345678"></div>
             <div><label>📅 الشهر</label><input type="month" id="inpMonth"></div>
-            <div style="grid-column: 1/-1;"><label>📅 التاريخ</label><input type="date" id="inpDate"></div>
-            
-            <div class="crew-section" style="grid-column: 1/-1;">
-                <h3>👥 منظمي السير (Verkeersregelaars)</h3>
-                <div style="margin-bottom:10px;">
-                    <label>عدد المنظمين:</label>
-                    <div style="display:flex;gap:10px;align-items:center;">
-                        <button class="btn-crew" onclick="addCrewMember()" style="flex:1;">➕ إضافة منظم</button>
-                        <button class="btn-util" onclick="resetToSingleCrew()" style="min-width:100px;">🔄 شخص واحد</button>
-                    </div>
-                </div>
-                <div id="crewMembersContainer"></div>
-                <div id="totalCrewInfo" class="total-crew-info" style="display:none;">
-                    إجمالي المنظمين: <span id="totalCrewCount">1</span> | 
-                    إجمالي الساعات: <span id="totalCrewHours">0</span> | 
-                    المجموع: €<span id="totalCrewAmount">0.00</span>
+            <div><label>📅 التاريخ (Datum)</label><input type="date" id="inpDate"></div>
+            <div><label>⏰ بداية (Start)</label>
+                <div class="time-wrapper">
+                    <select id="inpStartH"></select><span class="colon">:</span>
+                    <select id="inpStartM"></select>
                 </div>
             </div>
-            
-            <div><label>☕ استراحة</label>
-                <select id="inpBreak" onchange="doCalc()">
+            <div><label>⏰ نهاية (Eind)</label>
+                <div class="time-wrapper">
+                    <select id="inpEndH"></select><span class="colon">:</span>
+                    <select id="inpEndM"></select>
+                </div>
+            </div>
+            <div><label>☕ استراحة (Pauze)</label>
+                <select id="inpBreak">
                     <option value="0">0 min</option>
                     <option value="15">15 min</option>
                     <option value="30">30 min</option>
@@ -200,696 +138,471 @@
                     <option value="60">60 min</option>
                 </select>
             </div>
-            <div><label>📍 المكان</label><input type="text" id="inpLoc" list="locList"></div>
+            <div><label>📍 المكان (Locatie)</label><input type="text" id="inpLoc" list="locList"></div>
             <datalist id="locList"></datalist>
-            <div><label>💰 السعر/ساعة</label><input type="number" id="inpRate" step="0.5" oninput="doCalc()"></div>
-            <div><label>🚗 كم</label><input type="number" id="inpKm" step="0.5" oninput="doCalc()"></div>
-            <div style="grid-column:1/-1;"><label>📝 ملاحظات</label><textarea id="inpNotes"></textarea></div>
+            <div><label>💰 السعر/ساعة (Tarief)</label><input type="number" id="inpRate" step="0.5"></div>
+            <div><label>🚗 كم (Km)</label><input type="number" id="inpKm" step="0.5"></div>
+            <div style="grid-column:1/-1;"><label>📝 ملاحظات (Opmerkingen)</label><textarea id="inpNotes"></textarea></div>
         </div>
-        
         <div class="live-box">
             💵 اليومي: <span id="liveTotal">0.00</span>
             <small id="liveDetail">أدخل البيانات</small>
-            <small id="liveHours" style="color:var(--accent);">⏱️ الساعات: 0.0</small>
+            <small id="liveHours" style="color:var(--accent);">⏱️ الساعات المدفوعة: 0.0</small>
         </div>
-        
         <div class="btns">
-            <button id="addBtn" class="btn-add" onclick="addOrUpdateEntry()">➕ إضافة يوم</button>
-            <button class="btn-util" onclick="clearLists()">🧹 مسح القوائم</button>
+            <button id="addBtn" class="btn-add">➕ إضافة يوم (Toevoegen)</button>
+            <button id="cancelEditBtn" class="btn-cancel" style="display:none;">❌ إلغاء التعديل</button>
+            <button id="clearListBtn" class="btn-util">🧹 مسح القوائم</button>
         </div>
     </div>
 
-    <div class="card">
-        <h3 style="color:var(--purple);margin-bottom:10px;">📋 الإدخالات المحفوظة (<span id="entryCount">0</span>)</h3>
-        <div id="entriesList" class="entries-list">
-            <div style="text-align:center;color:#64748b;padding:20px;">لا توجد إدخالات</div>
-        </div>
-    </div>
-
-    <div class="card" style="direction:ltr;text-align:left;">
-        <h3 style="color:var(--purple);margin-bottom:12px;">🇳🇱 Factuur</h3>
+    <div class="card dutch-section">
+        <h3 style="color:var(--purple);margin-bottom:12px; text-align: left;">🇳🇱 Factuur / Urenoverzicht</h3>
         <div class="grid">
-            <div><label>Werkgever:</label><select id="dutchEmployerSelect"><option value="all">Alle</option></select></div>
-            <div><label>Van:</label><input type="date" id="dutchFrom"></div>
-            <div><label>Tot:</label><input type="date" id="dutchTo"></div>
+            <div>
+                <label>Selecteer Werkgever:</label>
+                <select id="dutchEmployerSelect">
+                    <option value="all">Alle Werkgevers</option>
+                </select>
+            </div>
+            <div>
+                <label>Van (optioneel):</label>
+                <input type="date" id="dutchFrom">
+            </div>
+            <div>
+                <label>Tot (optioneel):</label>
+                <input type="date" id="dutchTo">
+            </div>
         </div>
-        <button class="btn-pdf" style="width:100%;margin-top:10px;" onclick="generatePDF()">📥 PDF Factuur</button>
+        <div class="btns" style="justify-content: flex-start;">
+            <button id="pdfDutchBtn" class="btn-pdf" style="min-width: 250px;">📥 Factuur PDF genereren (مباشر)</button>
+        </div>
     </div>
 </div>
 
+<input type="file" id="impFile" accept=".json" style="display:none;">
 <div id="toast" class="toast"></div>
+
 <div class="dr-badge">⚙️ د. عبدالله</div>
 
+<script id="savedDataScript">
+const SAVED_DATA = {"entries":[],"names":[],"locs":[],"employers":[],"payments":{},"lastSave":"2026-07-06T10:00:00.000Z","version":"3.8"};
+</script>
+
 <script>
-// ============================================
-// ✅ مفتاح التخزين الفريد - معزول تماماً عن البرامج الأخرى
-// ============================================
-const UNIQUE_STORAGE_KEY = 'DR_ABDELLAH_WAGES_GO5_UNIQUE';
+    let entries = [], names = new Set(), locs = new Set(), employers = new Set();
+    let payments = {}, currentPayContext = null;
+    let hasUnsavedChanges = false;
+    let editingId = null;
 
-let entries = [];
-let names = new Set();
-let locs = new Set();
-let employers = new Set();
-let editingId = null;
-let crewMembers = [];
+    const els = {
+        m: document.getElementById('inpMonth'), n: document.getElementById('inpName'),
+        emp: document.getElementById('inpEmployer'), empPhone: document.getElementById('inpEmployerPhone'),
+        d: document.getElementById('inpDate'), l: document.getElementById('inpLoc'),
+        r: document.getElementById('inpRate'), k: document.getElementById('inpKm'), notes: document.getElementById('inpNotes'),
+        brk: document.getElementById('inpBreak'),
+        lt: document.getElementById('liveTotal'), ld: document.getElementById('liveDetail'), lh: document.getElementById('liveHours'),
+        nl: document.getElementById('nameList'), ll: document.getElementById('locList'), el: document.getElementById('employerList'),
+        t: document.getElementById('toast'), imp: document.getElementById('impFile'),
+        sh: document.getElementById('inpStartH'), sm: document.getElementById('inpStartM'),
+        eh: document.getElementById('inpEndH'), em: document.getElementById('inpEndM')
+    };
 
-// ✅ دالة التحميل مع ترحيل تلقائي من المفاتيح القديمة
-function loadData() {
-    try {
-        // المفاتيح القديمة المحتملة للترحيل
-        const oldKeys = [
-            'GO_WAGES_DATA_v5_4',
-            'GO_WAGES_DATA_v5_3',
-            'GO_WAGES_DATA_v5_2',
-            'GO_WAGES_DATA_v5_1',
-            'GO_WAGES_DATA_v5',
-            'GO_WAGES_DATA_v4',
-            'GO_WAGES_DATA_v3_9',
-            'GO_WAGES_DATA_v3_8',
-            'GO_WAGES_DATA'
-        ];
+    function initTimeSelects() {
+        const fillSelect = (sel, start, end, step=1) => { 
+            for(let i=start; i<=end; i+=step) sel.appendChild(new Option(String(i).padStart(2,'0'), String(i).padStart(2,'0'))); 
+        };
+        fillSelect(els.sh, 0, 23); fillSelect(els.eh, 0, 23);
+        fillSelect(els.sm, 0, 55, 5); fillSelect(els.em, 0, 55, 5);
+        // تعيين القيم الافتراضية بعد ملء الخيارات لضمان عملها في الآيفون
+        setTimeout(() => {
+            els.sh.value = '08'; els.sm.value = '00'; 
+            els.eh.value = '16'; els.em.value = '00';
+            calc(); // تحديث فوري بعد التعيين
+        }, 50);
+    }
+
+    function calcHours() {
+        // ✅ إضافة الأساس 10 لـ parseInt لمنع أخطاء تفسير الأرقام في بعض المتصفحات
+        const startH = parseInt(els.sh.value, 10) || 0;
+        const startM = parseInt(els.sm.value, 10) || 0;
+        const endH = parseInt(els.eh.value, 10) || 0;
+        const endM = parseInt(els.em.value, 10) || 0;
+        const breakMins = parseInt(els.brk.value, 10) || 0;
         
-        let data = null;
+        const startMins = startH * 60 + startM;
+        const endMins = endH * 60 + endM;
         
-        // 1. البحث في المفتاح الفريد الجديد أولاً
-        data = localStorage.getItem(UNIQUE_STORAGE_KEY);
+        let diff = endMins - startMins;
+        if (diff < 0) diff += 24 * 60; // التعامل مع الورديات الليلية
         
-        // 2. إذا لم يوجد، البحث في المفاتيح القديمة وترحيلها
-        if (!data) {
-            for (let key of oldKeys) {
-                const oldData = localStorage.getItem(key);
-                if (oldData) {
-                    console.log('📦 تم العثور على بيانات قديمة في:', key);
-                    data = oldData;
-                    // ترحيل البيانات إلى المفتاح الفريد الجديد
-                    localStorage.setItem(UNIQUE_STORAGE_KEY, oldData);
-                    localStorage.removeItem(key); // حذف المفتاح القديم
-                    showToast('🔄 تم ترحيل البيانات القديمة تلقائياً');
-                    break;
+        let paidMins = diff - breakMins;
+        if (paidMins < 0) paidMins = 0;
+        
+        return Math.round((paidMins / 60) * 2) / 2;
+    }
+
+    function migrateEntries() {
+        entries.forEach(e => {
+            if (!e.startTime) e.startTime = '';
+            if (!e.endTime) e.endTime = '';
+            if (e.notes === undefined) e.notes = '';
+            if (e.rate === undefined) e.rate = 0;
+            if (e.km === undefined) e.km = 0;
+            if (e.transport === undefined) e.transport = 0;
+            if (e.total === undefined) e.total = 0;
+            if (e.hours === undefined) e.hours = 0;
+            if (!e.id) e.id = Date.now() + Math.random();
+            if (e.employer === undefined) e.employer = '';
+            if (e.employerPhone === undefined) e.employerPhone = '';
+            if (e.breakMins === undefined) e.breakMins = 0;
+            if (e.name) e.name = e.name.trim();
+            if (e.loc) e.loc = e.loc.trim();
+            if (e.employer) e.employer = e.employer.trim();
+            if (e.employerPhone) e.employerPhone = e.employerPhone.trim();
+            if (e.notes) e.notes = e.notes.trim();
+        });
+    }
+
+    function load() {
+        try {
+            if (typeof SAVED_DATA !== 'undefined' && SAVED_DATA.entries && SAVED_DATA.entries.length > 0) {
+                entries = JSON.parse(JSON.stringify(SAVED_DATA.entries));
+                if (SAVED_DATA.names) names = new Set(SAVED_DATA.names);
+                if (SAVED_DATA.locs) locs = new Set(SAVED_DATA.locs);
+                if (SAVED_DATA.employers) employers = new Set(SAVED_DATA.employers);
+                if (SAVED_DATA.payments) payments = JSON.parse(JSON.stringify(SAVED_DATA.payments));
+            }
+            try {
+                const localEntries = JSON.parse(localStorage.getItem('GO_entries_v3_8') || '[]');
+                if (localEntries.length > 0) {
+                    const existingIds = new Set(entries.map(e => e.id));
+                    localEntries.forEach(e => { 
+                        if (!existingIds.has(e.id)) entries.push(e); 
+                        else {
+                            const idx = entries.findIndex(ex => ex.id === e.id);
+                            if (idx !== -1) entries[idx] = e;
+                        }
+                    });
+                    const localNames = JSON.parse(localStorage.getItem('GO_names_v3_8') || '[]');
+                    const localLocs = JSON.parse(localStorage.getItem('GO_locs_v3_8') || '[]');
+                    const localEmps = JSON.parse(localStorage.getItem('GO_employers_v3_8') || '[]');
+                    const localPayments = JSON.parse(localStorage.getItem('GO_payments_v3_8') || '{}');
+                    localNames.forEach(n => names.add(n));
+                    localLocs.forEach(l => locs.add(l));
+                    localEmps.forEach(e => employers.add(e));
+                    Object.keys(localPayments).forEach(key => { if (!payments[key]) payments[key] = localPayments[key]; });
                 }
+            } catch(e) { console.log('لا توجد بيانات محلية'); }
+            
+            migrateEntries();
+            updateStats();
+            const msgDiv = document.getElementById('dataLoadedMsg');
+            msgDiv.innerHTML = `<div class="data-loaded">✅ تم تحميل ${entries.length} إدخال</div>`;
+            setTimeout(() => { msgDiv.style.display = 'none'; }, 3000);
+        } catch (err) { console.error('خطأ في التحميل:', err); }
+    }
+
+    function autoSave() {
+        try {
+            localStorage.setItem('GO_entries_v3_8', JSON.stringify(entries));
+            localStorage.setItem('GO_names_v3_8', JSON.stringify([...names]));
+            localStorage.setItem('GO_locs_v3_8', JSON.stringify([...locs]));
+            localStorage.setItem('GO_employers_v3_8', JSON.stringify([...employers]));
+            localStorage.setItem('GO_payments_v3_8', JSON.stringify(payments));
+        } catch (err) { console.error('خطأ في الحفظ:', err); }
+    }
+
+    function updateStats() {
+        document.getElementById('statsBar').innerHTML = `📊 ${entries.length} إدخال | 👤 ${names.size} اسم | 🏢 ${employers.size} صاحب عمل`;
+        els.el.innerHTML = ''; 
+        document.getElementById('dutchEmployerSelect').innerHTML = '<option value="all">Alle Werkgevers</option>';
+        employers.forEach(v => {
+            els.el.appendChild(new Option(v));
+            document.getElementById('dutchEmployerSelect').appendChild(new Option(v, v));
+        });
+    }
+
+    function markUnsaved() { 
+        hasUnsavedChanges = true; 
+        autoSave();
+        document.getElementById('unsavedWarning').innerHTML = `<div class="unsaved-warning">⚠️ لديك تغييرات غير محفوظة! اضغط "💾 حفظ في ملف"</div>`;
+    }
+
+    function saveToFile() {
+        try {
+            const htmlContent = document.documentElement.outerHTML;
+            const newData = { entries, names: [...names], locs: [...locs], employers: [...employers], payments, lastSave: new Date().toISOString(), version: '3.8' };
+            const dataRegex = /const SAVED_DATA = \{[\s\S]*?\};/;
+            const newScript = `const SAVED_DATA = ${JSON.stringify(newData)};`;
+            const updatedHtml = htmlContent.replace(dataRegex, newScript);
+            const blob = new Blob([updatedHtml], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'wages_system_v3.8.html';
+            document.body.appendChild(a); a.click();
+            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+            hasUnsavedChanges = false;
+            document.getElementById('unsavedWarning').innerHTML = '';
+            showToast('✅ تم الحفظ في الملف!');
+        } catch (err) { showToast('⚠️ خطأ في الحفظ', true); }
+    }
+
+    function exportJSON() {
+        if (entries.length === 0) { showToast('⚠️ لا توجد بيانات', true); return; }
+        const data = { entries, names: [...names], locs: [...locs], employers: [...employers], payments, exportDate: new Date().toISOString(), version: '3.8' };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `GO_backup_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+        showToast(`✅ تم تصدير ${entries.length} إدخال`);
+    }
+
+    els.imp.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const data = JSON.parse(event.target.result.replace(/"\s*:/g, '":'));
+                if (!data.entries || !Array.isArray(data.entries)) { showToast('⚠️ ملف غير صالح', true); return; }
+                if (!confirm(`استيراد ${data.entries.length} إدخال؟`)) return;
+                const existingIds = new Set(entries.map(e => e.id));
+                let addedCount = 0;
+                data.entries.forEach(e => { if (!existingIds.has(e.id)) { entries.push(e); addedCount++; } });
+                if (data.names) data.names.forEach(n => names.add(n.trim()));
+                if (data.locs) data.locs.forEach(l => locs.add(l.trim()));
+                if (data.employers) data.employers.forEach(emp => employers.add(emp.trim()));
+                if (data.payments) Object.assign(payments, data.payments);
+                migrateEntries(); updateStats(); autoSave();
+                showToast(`✅ تم استيراد ${addedCount} إدخال`);
+            } catch (err) { showToast('⚠️ خطأ في الملف', true); }
+        };
+        reader.readAsText(file);
+        setTimeout(() => { e.target.value = ''; }, 100);
+    });
+
+    function clearAllData() {
+        if (!confirm('⚠️ حذف جميع البيانات؟')) return;
+        if (!confirm('تأكيد نهائي؟')) return;
+        entries = []; names.clear(); locs.clear(); employers.clear(); payments = {};
+        localStorage.removeItem('GO_entries_v3_8'); localStorage.removeItem('GO_names_v3_8');
+        localStorage.removeItem('GO_locs_v3_8'); localStorage.removeItem('GO_employers_v3_8');
+        localStorage.removeItem('GO_payments_v3_8');
+        updateStats();
+        document.getElementById('unsavedWarning').innerHTML = '';
+        showToast('🗑️ تم المسح');
+    }
+
+    function showToast(msg, err = false) {
+        els.t.textContent = msg;
+        els.t.className = 'toast show' + (err ? ' err' : '');
+        setTimeout(() => els.t.className = 'toast', 2500);
+    }
+
+    function calc() {
+        const hours = calcHours();
+        const rate = parseFloat(els.r.value) || 0;
+        const km = parseFloat(els.k.value) || 0;
+        const transport = km * 0.20;
+        const total = (hours * rate) + transport;
+        els.lt.textContent = total.toFixed(2);
+        els.ld.textContent = `(${hours}س × ${rate}) + (${km}كم × 0.20)`;
+        els.lh.textContent = `⏱️ الساعات المدفوعة: ${hours.toFixed(1)}`;
+    }
+
+    // ✅ إصلاح الآيفون: استخدام addEventListener بدلاً من التعيين المباشر لضمان استجابة اللمس
+    ['sh','sm','eh','em','r','k','brk'].forEach(id => { 
+        if(els[id]) { 
+            els[id].addEventListener('change', calc); 
+            els[id].addEventListener('input', calc); 
+        } 
+    });
+
+    document.getElementById('addBtn').onclick = () => {
+        const name = els.n.value.trim();
+        const date = els.d.value;
+        if (!name || !date) { showToast('⚠️ الاسم والتاريخ مطلوبان', true); return; }
+        const hours = calcHours();
+        const rate = parseFloat(els.r.value) || 0;
+        const km = parseFloat(els.k.value) || 0;
+        const transport = km * 0.20;
+        const total = (hours * rate) + transport;
+        const startTime = `${els.sh.value}:${els.sm.value}`;
+        const endTime = `${els.eh.value}:${els.em.value}`;
+        const breakMins = parseInt(els.brk.value, 10) || 0;
+        const employer = els.emp.value.trim();
+        const employerPhone = els.empPhone.value.trim();
+        
+        if (editingId !== null) {
+            const idx = entries.findIndex(e => e.id === editingId);
+            if (idx !== -1) {
+                entries[idx] = { ...entries[idx], name, date, employer, employerPhone, loc: els.l.value.trim(), rate, km, transport, total, hours, startTime, endTime, breakMins, notes: els.notes.value.trim() };
+                names.add(name);
+                if (els.l.value.trim()) locs.add(els.l.value.trim());
+                if (employer) employers.add(employer);
+                markUnsaved(); updateStats();
+                showToast('✅ تم تحديث السجل');
+                cancelEdit();
+                return;
             }
         }
         
-        // 3. تحميل البيانات
-        if (data) {
-            const parsed = JSON.parse(data);
-            entries = parsed.entries || [];
-            names = new Set(parsed.names || []);
-            locs = new Set(parsed.locs || []);
-            employers = new Set(parsed.employers || []);
-            showToast(`✅ تم تحميل ${entries.length} إدخال`);
+        entries.push({ name, date, employer, employerPhone, loc: els.l.value.trim(), rate, km, transport, total, hours, startTime, endTime, breakMins, notes: els.notes.value.trim(), id: Date.now() });
+        names.add(name);
+        if (els.l.value.trim()) locs.add(els.l.value.trim());
+        if (employer) employers.add(employer);
+        markUnsaved(); updateStats();
+        showToast('✅ تم الإضافة');
+        els.d.value = ''; els.notes.value = ''; els.k.value = ''; els.brk.value = '0'; els.empPhone.value = '';
+        calc();
+    };
+
+    function editEntry(id) {
+        const entry = entries.find(e => e.id === id);
+        if (!entry) { showToast('⚠️ لم يتم العثور على السجل', true); return; }
+        els.n.value = entry.name;
+        els.emp.value = entry.employer || '';
+        els.empPhone.value = entry.employerPhone || '';
+        els.d.value = entry.date;
+        els.l.value = entry.loc || '';
+        els.r.value = entry.rate;
+        els.k.value = entry.km;
+        els.brk.value = entry.breakMins || 0;
+        els.notes.value = entry.notes || '';
+        if (entry.startTime && entry.startTime.includes(':')) {
+            const parts = entry.startTime.split(':');
+            els.sh.value = parts[0].padStart(2, '0'); els.sm.value = (parts[1] || '00').padStart(2, '0');
+        }
+        if (entry.endTime && entry.endTime.includes(':')) {
+            const parts = entry.endTime.split(':');
+            els.eh.value = parts[0].padStart(2, '0'); els.em.value = (parts[1] || '00').padStart(2, '0');
+        }
+        editingId = id;
+        document.getElementById('addBtn').textContent = '✅ تحديث السجل';
+        document.getElementById('addBtn').className = 'btn-update';
+        document.getElementById('cancelEditBtn').style.display = 'block';
+        document.getElementById('editingBanner').innerHTML = `<div class="editing-banner">✏️ تعديل: ${entry.name} - ${entry.date}</div>`;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        calc();
+        showToast('📝 عدّل البيانات ثم اضغط "تحديث السجل"');
+    }
+
+    function cancelEdit() {
+        editingId = null;
+        document.getElementById('addBtn').textContent = '➕ إضافة يوم (Toevoegen)';
+        document.getElementById('addBtn').className = 'btn-add';
+        document.getElementById('cancelEditBtn').style.display = 'none';
+        document.getElementById('editingBanner').innerHTML = '';
+    }
+
+    document.getElementById('cancelEditBtn').onclick = cancelEdit;
+
+    document.getElementById('pdfDutchBtn').onclick = () => {
+        const selectedEmp = document.getElementById('dutchEmployerSelect').value;
+        const from = document.getElementById('dutchFrom').value;
+        const to = document.getElementById('dutchTo').value;
+        
+        let filtered = entries.filter(e => {
+            if (selectedEmp !== 'all' && e.employer !== selectedEmp) return false;
+            if (from && e.date < from) return false;
+            if (to && e.date > to) return false;
+            return true;
+        }).sort((a,b) => a.date.localeCompare(b.date));
+
+        if (filtered.length === 0) {
+            showToast('⚠️ Geen gegevens gevonden voor dit filter', true);
+            return;
+        }
+
+        showToast('⏳ Generating PDF...');
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('portrait', 'mm', 'a4');
+        
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Factuur / Urenoverzicht', 105, 20, { align: 'center' });
+        
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        if (selectedEmp !== 'all') {
+            doc.text(`Werkgever: ${selectedEmp}`, 105, 30, { align: 'center' });
         } else {
-            showToast('📭 لا توجد بيانات محفوظة');
+            doc.text('Alle Werkgevers', 105, 30, { align: 'center' });
         }
-    } catch (e) { 
-        console.error('خطأ في التحميل:', e); 
-        showToast('⚠️ خطأ في تحميل البيانات', true);
-    }
-    updateUI();
-    initCrewSystem();
-}
-
-// ✅ دالة الحفظ - تستخدم المفتاح الفريد فقط
-function saveData() {
-    try {
-        const data = {
-            entries, 
-            names: [...names], 
-            locs: [...locs], 
-            employers: [...employers],
-            lastSave: new Date().toISOString(),
-            programId: 'GO5_DR_ABDELLAH',
-            version: '5.5'
-        };
-        localStorage.setItem(UNIQUE_STORAGE_KEY, JSON.stringify(data));
-        console.log('💾 تم الحفظ في المفتاح الفريد:', UNIQUE_STORAGE_KEY);
-    } catch (e) { 
-        console.error('خطأ في الحفظ:', e); 
-    }
-}
-
-function initCrewSystem() {
-    if (crewMembers.length === 0) {
-        crewMembers = [{ id: 1, startTime: '08:00', endTime: '16:00' }];
-        renderCrewMembers();
-    }
-}
-
-function addCrewMember() {
-    const newId = crewMembers.length > 0 ? Math.max(...crewMembers.map(m => m.id)) + 1 : 1;
-    crewMembers.push({ id: newId, startTime: '08:00', endTime: '16:00' });
-    renderCrewMembers();
-    doCalc();
-    showToast(`👥 تم إضافة منظم (${crewMembers.length} إجمالي)`);
-}
-
-function removeCrewMember(id) {
-    if (crewMembers.length <= 1) {
-        showToast('⚠️ يجب أن يكون هناك منظم واحد على الأقل', true);
-        return;
-    }
-    crewMembers = crewMembers.filter(m => m.id !== id);
-    renderCrewMembers();
-    doCalc();
-}
-
-function updateCrewTime(id, field, value) {
-    const member = crewMembers.find(m => m.id === id);
-    if (member) {
-        member[field] = value;
-        doCalc();
-    }
-}
-
-function renderCrewMembers() {
-    const container = document.getElementById('crewMembersContainer');
-    if (crewMembers.length === 1) {
-        container.innerHTML = `
-            <div class="crew-member">
-                <div class="crew-member-header">
-                    <span class="crew-member-title">👤 المنظم الرئيسي</span>
-                </div>
-                <div class="crew-time-grid">
-                    <div>
-                        <label> البداية</label>
-                        <input type="time" id="crewStartTime_1" value="${crewMembers[0].startTime}" onchange="updateCrewTime(1, 'startTime', this.value)">
-                    </div>
-                    <div>
-                        <label>⏰ النهاية</label>
-                        <input type="time" id="crewEndTime_1" value="${crewMembers[0].endTime}" onchange="updateCrewTime(1, 'endTime', this.value)">
-                    </div>
-                </div>
-            </div>
-        `;
-    } else {
-        container.innerHTML = crewMembers.map((member, index) => `
-            <div class="crew-member">
-                <div class="crew-member-header">
-                    <span class="crew-member-title">👤 منظم #${index + 1}</span>
-                    <button class="btn-remove-crew" onclick="removeCrewMember(${member.id})">🗑️ حذف</button>
-                </div>
-                <div class="crew-time-grid">
-                    <div>
-                        <label>⏰ البداية</label>
-                        <input type="time" id="crewStartTime_${member.id}" value="${member.startTime}" onchange="updateCrewTime(${member.id}, 'startTime', this.value)">
-                    </div>
-                    <div>
-                        <label>⏰ النهاية</label>
-                        <input type="time" id="crewEndTime_${member.id}" value="${member.endTime}" onchange="updateCrewTime(${member.id}, 'endTime', this.value)">
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
-    document.getElementById('totalCrewCount').textContent = crewMembers.length;
-}
-
-function resetToSingleCrew() {
-    if (crewMembers.length > 1 && confirm('العودة إلى منظم واحد فقط؟')) {
-        crewMembers = [{ id: 1, startTime: crewMembers[0].startTime, endTime: crewMembers[0].endTime }];
-        renderCrewMembers();
-        doCalc();
-        showToast('🔄 تم العودة إلى منظم واحد');
-    }
-}
-
-function calculateCrewHours() {
-    const breakMins = parseInt(document.getElementById('inpBreak').value) || 0;
-    const rate = parseFloat(document.getElementById('inpRate').value) || 0;
-    const km = parseFloat(document.getElementById('inpKm').value) || 0;
-    const transport = km * 0.20;
-    
-    let totalHours = 0;
-    let crewDetails = [];
-    
-    crewMembers.forEach(member => {
-        if (member.startTime && member.endTime) {
-            const [startH, startM] = member.startTime.split(':').map(Number);
-            const [endH, endM] = member.endTime.split(':').map(Number);
-            
-            const startMins = startH * 60 + startM;
-            const endMins = endH * 60 + endM;
-            
-            let diff = endMins - startMins;
-            if (diff < 0) diff += 24 * 60;
-            
-            let paidMins = diff - breakMins;
-            if (paidMins < 0) paidMins = 0;
-            
-            const hours = Math.round((paidMins / 60) * 2) / 2;
-            totalHours += hours;
-            crewDetails.push({ ...member, hours });
+        
+        if (from) {
+            doc.setFontSize(10);
+            doc.text(`Periode: ${from} tot ${to}`, 105, 37, { align: 'center' });
         }
-    });
-    
-    const totalAmount = (totalHours * rate) + transport;
-    
-    return { totalHours, totalAmount, transport, crewDetails, rate, km };
-}
 
-function doCalc() {
-    const result = calculateCrewHours();
-    
-    document.getElementById('liveTotal').textContent = result.totalAmount.toFixed(2);
-    document.getElementById('liveDetail').textContent = `(${result.totalHours}س × ${result.rate}) + (${result.km}كم × 0.20)`;
-    document.getElementById('liveHours').textContent = `⏱️ الساعات: ${result.totalHours.toFixed(1)}`;
-    
-    if (crewMembers.length > 1) {
-        document.getElementById('totalCrewHours').textContent = result.totalHours.toFixed(1);
-        document.getElementById('totalCrewAmount').textContent = result.totalAmount.toFixed(2);
-        document.getElementById('totalCrewInfo').style.display = 'block';
-    } else {
-        document.getElementById('totalCrewInfo').style.display = 'none';
-    }
-}
-
-function addOrUpdateEntry() {
-    const name = document.getElementById('inpName').value.trim();
-    const date = document.getElementById('inpDate').value;
-    
-    if (!name || !date) { showToast('⚠️ الاسم والتاريخ مطلوبان', true); return; }
-    
-    const result = calculateCrewHours();
-    if (result.totalHours === 0) { showToast('️ الوقت مطلوب', true); return; }
-    
-    const rate = parseFloat(document.getElementById('inpRate').value) || 0;
-    const km = parseFloat(document.getElementById('inpKm').value) || 0;
-    const transport = km * 0.20;
-    
-    const entryData = {
-        name, date,
-        employer: document.getElementById('inpEmployer').value.trim(),
-        employerPhone: document.getElementById('inpEmployerPhone').value.trim(),
-        loc: document.getElementById('inpLoc').value.trim(),
-        rate, km, transport,
-        total: result.totalAmount,
-        hours: result.totalHours,
-        crewCount: crewMembers.length,
-        crewDetails: result.crewDetails,
-        breakMins: parseInt(document.getElementById('inpBreak').value) || 0,
-        notes: document.getElementById('inpNotes').value.trim()
-    };
-    
-    if (editingId !== null) {
-        const idx = entries.findIndex(e => e.id === editingId);
-        if (idx !== -1) {
-            entries[idx] = { ...entries[idx], ...entryData, updatedAt: new Date().toISOString() };
-            showToast('✅ تم تحديث الإدخال بنجاح!');
-        }
-        cancelEdit();
-    } else {
-        entryData.id = Date.now();
-        entryData.createdAt = new Date().toISOString();
-        entries.push(entryData);
-        showToast(`✅ تم إضافة الإدخال! (${crewMembers.length} منظم)`);
-    }
-    
-    names.add(name);
-    if (entryData.loc) locs.add(entryData.loc);
-    if (entryData.employer) employers.add(entryData.employer);
-    
-    saveData();
-    updateUI();
-    clearForm();
-}
-
-function editEntry(id) {
-    const entry = entries.find(e => e.id === id);
-    if (!entry) { showToast('⚠️ الإدخال غير موجود', true); return; }
-    
-    document.getElementById('inpName').value = entry.name || '';
-    document.getElementById('inpEmployer').value = entry.employer || '';
-    document.getElementById('inpEmployerPhone').value = entry.employerPhone || '';
-    document.getElementById('inpDate').value = entry.date || '';
-    document.getElementById('inpBreak').value = entry.breakMins || 0;
-    document.getElementById('inpLoc').value = entry.loc || '';
-    document.getElementById('inpRate').value = entry.rate || 0;
-    document.getElementById('inpKm').value = entry.km || 0;
-    document.getElementById('inpNotes').value = entry.notes || '';
-    
-    if (entry.crewDetails && entry.crewDetails.length > 0) {
-        crewMembers = entry.crewDetails.map(c => ({
-            id: c.id || Math.random(),
-            startTime: c.startTime || '08:00',
-            endTime: c.endTime || '16:00'
-        }));
-    } else {
-        crewMembers = [{ id: 1, startTime: entry.startTime || '08:00', endTime: entry.endTime || '16:00' }];
-    }
-    
-    renderCrewMembers();
-    
-    editingId = id;
-    const addBtn = document.getElementById('addBtn');
-    addBtn.textContent = '💾 حفظ التعديلات';
-    addBtn.className = 'btn-update';
-    
-    document.getElementById('editingInfo').textContent = `${entry.name} - ${entry.date} (€${entry.total.toFixed(2)})`;
-    document.getElementById('editingBanner').classList.add('show');
-    
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    doCalc();
-    showToast('✏️ عدّل البيانات ثم اضغط "حفظ التعديلات"');
-}
-
-function cancelEdit() {
-    editingId = null;
-    const addBtn = document.getElementById('addBtn');
-    addBtn.textContent = ' إضافة يوم';
-    addBtn.className = 'btn-add';
-    document.getElementById('editingBanner').classList.remove('show');
-    clearForm();
-    showToast('🔄 تم إلغاء التعديل');
-}
-
-function clearForm() {
-    document.getElementById('inpDate').value = '';
-    document.getElementById('inpNotes').value = '';
-    document.getElementById('inpKm').value = '';
-    document.getElementById('inpBreak').value = '0';
-    document.getElementById('inpEmployerPhone').value = '';
-    crewMembers = [{ id: 1, startTime: '08:00', endTime: '16:00' }];
-    renderCrewMembers();
-    doCalc();
-}
-
-function deleteEntry(id) {
-    const entry = entries.find(e => e.id === id);
-    if (!entry) return;
-    
-    if (!confirm(`حذف إدخال ${entry.name} - ${entry.date}؟\nالمبلغ: €${entry.total.toFixed(2)}`)) return;
-    
-    entries = entries.filter(e => e.id !== id);
-    saveData();
-    updateUI();
-    showToast('🗑️ تم الحذف');
-    
-    if (editingId === id) cancelEdit();
-}
-
-function updateUI() {
-    const totalEarnings = entries.reduce((sum, e) => sum + e.total, 0);
-    const totalHours = entries.reduce((sum, e) => sum + e.hours, 0);
-    const totalCrewMembers = entries.reduce((sum, e) => sum + (e.crewCount || 1), 0);
-    
-    document.getElementById('statsBar').innerHTML = `
-        📊 ${entries.length} يوم | 👥 ${totalCrewMembers} منظم | ⏱️ ${totalHours.toFixed(1)}س | 💵 €${totalEarnings.toFixed(2)}
-    `;
-    
-    document.getElementById('entryCount').textContent = entries.length;
-    
-    const listEl = document.getElementById('entriesList');
-    if (entries.length === 0) {
-        listEl.innerHTML = '<div style="text-align:center;color:#64748b;padding:20px;">لا توجد إدخالات</div>';
-    } else {
-        const sorted = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        listEl.innerHTML = sorted.map(e => {
-            const crewInfo = e.crewCount > 1 ? 
-                e.crewDetails.map((c, i) => `👤${i+1}: ${c.startTime}-${c.endTime}`).join(' | ') :
-                `⏰ ${e.crewDetails ? e.crewDetails[0].startTime : ''} - ${e.crewDetails ? e.crewDetails[0].endTime : ''}`;
-            
-            return `
-                <div class="entry-item">
-                    <div class="info">
-                        <div class="name">
-                            ${e.name} - ${e.date}
-                            ${e.crewCount > 1 ? `<span class="crew-badge">${e.crewCount} منظمين</span>` : ''}
-                        </div>
-                        <div class="details">${crewInfo} | ⏱️ ${e.hours}س | 🚗 ${e.km}كم</div>
-                        ${e.loc ? `<div class="details">📍 ${e.loc}</div>` : ''}
-                        ${e.employer ? `<div class="details">🏢 ${e.employer}</div>` : ''}
-                    </div>
-                    <div class="amount">€${e.total.toFixed(2)}</div>
-                    <div class="entry-actions">
-                        <button class="btn-edit-entry" onclick="editEntry(${e.id})">️ تعديل</button>
-                        <button class="btn-delete-entry" onclick="deleteEntry(${e.id})">🗑️ حذف</button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-    
-    updateDatalists();
-}
-
-function updateDatalists() {
-    const nameList = document.getElementById('nameList');
-    nameList.innerHTML = '';
-    names.forEach(n => nameList.appendChild(new Option(n)));
-    
-    const employerList = document.getElementById('employerList');
-    employerList.innerHTML = '';
-    employers.forEach(e => employerList.appendChild(new Option(e)));
-    
-    const locList = document.getElementById('locList');
-    locList.innerHTML = '';
-    locs.forEach(l => locList.appendChild(new Option(l)));
-    
-    const dutchSelect = document.getElementById('dutchEmployerSelect');
-    dutchSelect.innerHTML = '<option value="all">Alle</option>';
-    employers.forEach(e => dutchSelect.appendChild(new Option(e, e)));
-}
-
-function exportBackup() {
-    if (entries.length === 0) { showToast('⚠️ لا توجد بيانات', true); return; }
-    const data = { 
-        entries, 
-        names: [...names], 
-        locs: [...locs], 
-        employers: [...employers], 
-        exportDate: new Date().toISOString(), 
-        version: '5.5',
-        programId: 'GO5_DR_ABDELLAH'
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `GO_BACKUP_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast(`✅ تم تصدير ${entries.length} إدخال`);
-}
-
-function importBackup(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = JSON.parse(e.target.result);
-            if (!data.entries) throw new Error('Invalid');
-            if (!confirm(`استيراد ${data.entries.length} إدخال؟`)) { input.value = ''; return; }
-            const existingIds = new Set(entries.map(e => e.id));
-            let imported = 0;
-            data.entries.forEach(entry => {
-                if (!existingIds.has(entry.id)) { entries.push(entry); imported++; }
-            });
-            if (data.names) data.names.forEach(n => names.add(n));
-            if (data.locs) data.locs.forEach(l => locs.add(l));
-            if (data.employers) data.employers.forEach(e => employers.add(e));
-            saveData();
-            updateUI();
-            initCrewSystem();
-            showToast(`✅ تم استيراد ${imported} إدخال`);
-        } catch (err) { showToast('⚠️ ملف غير صالح', true); }
-        input.value = '';
-    };
-    reader.readAsText(file);
-}
-
-// ✅ مسح البيانات - يحذف فقط بيانات هذا البرنامج
-function clearAllData() {
-    if (!confirm('️ حذف جميع البيانات؟')) return;
-    if (!confirm('تأكيد نهائي؟')) return;
-    
-    entries = []; 
-    names.clear(); 
-    locs.clear(); 
-    employers.clear();
-    
-    // حذف المفتاح الفريد فقط - لا يؤثر على برامج أخرى
-    localStorage.removeItem(UNIQUE_STORAGE_KEY);
-    
-    cancelEdit();
-    updateUI();
-    showToast('🗑️ تم مسح جميع البيانات');
-}
-
-function clearLists() {
-    if (!confirm('مسح القوائم فقط؟')) return;
-    names.clear(); 
-    locs.clear(); 
-    employers.clear();
-    saveData();
-    updateUI();
-    showToast('🧹 تم مسح القوائم');
-}
-
-// ✅ دالة الفاتورة الذكية - مع إجمالي لكل منظم + ترجمة هولندية كاملة
-function generatePDF() {
-    const sel = document.getElementById('dutchEmployerSelect').value;
-    const from = document.getElementById('dutchFrom').value;
-    const to = document.getElementById('dutchTo').value;
-    
-    let filtered = entries.filter(e => {
-        if (sel !== 'all' && e.employer !== sel) return false;
-        if (from && e.date < from) return false;
-        if (to && e.date > to) return false;
-        return true;
-    }).sort((a, b) => new Date(a.date) - new Date(b.date));
-    
-    if (filtered.length === 0) { showToast('⚠️ لا توجد بيانات', true); return; }
-    
-    showToast('⏳ Generating PDF...');
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('p', 'mm', 'a4');
-    
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Factuur / Urenoverzicht', 105, 20, { align: 'center' });
-    
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.text(sel !== 'all' ? `Werkgever: ${sel}` : 'Alle Werkgevers', 105, 30, { align: 'center' });
-    
-    if (from) {
-        doc.setFontSize(10);
-        doc.text(`Periode: ${from} - ${to}`, 105, 37, { align: 'center' });
-    }
-    
-    function allCrewSameTime(crewDetails) {
-        if (!crewDetails || crewDetails.length <= 1) return true;
-        const first = crewDetails[0];
-        return crewDetails.every(c => 
-            c.startTime === first.startTime && c.endTime === first.endTime
-        );
-    }
-    
-    let grandTotal = 0, grandHours = 0, totalCrew = 0;
-    const tableData = [];
-    
-    filtered.forEach(e => {
-        grandTotal += e.total;
-        grandHours += e.hours;
-        const crewCount = e.crewCount || 1;
-        const crewDetails = e.crewDetails || [];
-        totalCrew += crewCount;
-        
-        const transportPerPerson = e.transport / crewCount;
-        
-        if (crewCount === 1 || allCrewSameTime(crewDetails)) {
-            const crewLabel = crewCount > 1 ? ` (${crewCount} verkeersregelaars)` : '';
-            const hoursText = crewCount > 1 
-                ? `${(e.hours / crewCount).toFixed(1)}u × ${crewCount} = ${e.hours}u` 
-                : `${e.hours} uur`;
-            
-            tableData.push([
+        let grandTotal = 0, grandHours = 0;
+        const tableData = filtered.map(e => {
+            grandTotal += e.total;
+            grandHours += e.hours;
+            return [
                 e.date,
                 e.loc || '-',
-                crewDetails[0]?.startTime || '-',
-                crewDetails[0]?.endTime || '-',
-                `${e.breakMins} min`,
-                hoursText + crewLabel,
+                e.startTime || '-',
+                e.endTime || '-',
+                e.breakMins > 0 ? `${e.breakMins} min` : '-',
+                e.hours.toString(),
                 `€ ${e.rate.toFixed(2)}`,
                 `€ ${e.total.toFixed(2)}`
-            ]);
-        } 
-        else {
-            crewDetails.forEach((crew, index) => {
-                const isFirstRow = index === 0;
-                const isLastRow = index === crewDetails.length - 1;
-                
-                const personTotal = (crew.hours * e.rate) + transportPerPerson;
-                
-                tableData.push([
-                    isFirstRow ? e.date : '',
-                    isFirstRow ? e.loc || '-' : '',
-                    `Verkeersregelaar ${index + 1}`,
-                    `${crew.startTime} - ${crew.endTime}`,
-                    isFirstRow ? `${e.breakMins} min` : '',
-                    `${crew.hours} uur`,
-                    isFirstRow ? `€ ${e.rate.toFixed(2)}` : '',
-                    `€ ${personTotal.toFixed(2)}`
-                ]);
-            });
-            
-            tableData.push([
-                '', '', '', '', '',
-                { content: `Subtotaal ${crewCount} verkeersregelaars`, styles: { fontStyle: 'italic', halign: 'right', fontSize: 8 } },
-                '',
-                { content: `€ ${e.total.toFixed(2)}`, styles: { fontStyle: 'bold' } }
-            ]);
-        }
-    });
-    
-    doc.autoTable({
-        startY: from ? 45 : 38,
-        head: [['Datum', 'Locatie', 'Start/Verkeersregelaar', 'Eind/Tijd', 'Pauze', 'Uren', 'Tarief', 'Totaal']],
-        body: tableData,
-        theme: 'grid',
-        headStyles: { 
-            fillColor: [56, 189, 248], 
-            textColor: [0, 0, 0], 
-            fontStyle: 'bold',
-            halign: 'center',
-            fontSize: 9
-        },
-        bodyStyles: {
-            halign: 'center',
-            textColor: [0, 0, 0],
-            fontSize: 9
-        },
-        foot: [[
-            { content: 'TOTAAL:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold', fontSize: 11 } },
-            { content: `${grandHours.toFixed(1)} uur\n(${totalCrew} verkeersregelaars)`, styles: { fontStyle: 'bold', fontSize: 10 } },
-            '-',
-            { content: `€ ${grandTotal.toFixed(2)}`, styles: { fontStyle: 'bold', fontSize: 12 } }
-        ]],
-        footStyles: {
-            fillColor: [224, 224, 224],
-            textColor: [0, 0, 0],
-            fontStyle: 'bold'
-        },
-        margin: { top: 20, left: 8, right: 8 }
-    });
-    
-    const finalY = doc.lastAutoTable.finalY + 10;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Totaal aantal dagen: ${filtered.length}`, 105, finalY, { align: 'center' });
-    doc.text(`Totaal aantal verkeersregelaars: ${totalCrew}`, 105, finalY + 7, { align: 'center' });
-    doc.text(`Totaal bedrag: € ${grandTotal.toFixed(2)}`, 105, finalY + 14, { align: 'center' });
-    
-    doc.setFontSize(8);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Systeem ontwikkeld door Dr. Abdullah © ${new Date().getFullYear()}`, 105, 285, { align: 'center' });
-    
-    const filename = `Factuur_${sel !== 'all' ? sel.replace(/\s+/g, '_') : 'Alle'}_${new Date().toISOString().split('T')[0]}.pdf`;
-    doc.save(filename);
-    
-    showToast('✅ PDF تم إنشاؤه!');
-}
+            ];
+        });
 
-function showToast(msg, isError = false) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = 'toast show' + (isError ? ' err' : '');
-    setTimeout(() => t.className = 'toast', 3000);
-}
+        doc.autoTable({
+            startY: from ? 45 : 38,
+            head: [['Datum', 'Locatie', 'Start', 'Eind', 'Pauze', 'Uren', 'Tarief', 'Totaal']],
+            body: tableData,
+            theme: 'grid',
+            headStyles: { fillColor: [224, 224, 224], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center' },
+            bodyStyles: { halign: 'center', textColor: [0, 0, 0] },
+            foot: [[
+                { content: 'Totaal:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: `${grandHours.toFixed(1)} uur`, styles: { fontStyle: 'bold' } },
+                '-',
+                { content: `€ ${grandTotal.toFixed(2)}`, styles: { fontStyle: 'bold', fontSize: 12 } }
+            ]],
+            footStyles: { fillColor: [224, 224, 224], textColor: [0, 0, 0], fontStyle: 'bold' },
+            margin: { top: 20, left: 10, right: 10 }
+        });
 
-window.onload = function() {
+        const finalY = doc.lastAutoTable.finalY + 10;
+        doc.setFontSize(10);
+        doc.text(`Totaal aantal dagen: ${filtered.length}`, 105, finalY, { align: 'center' });
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Systeem ontwikkeld door Dr. Abdullah © ${new Date().getFullYear()}`, 105, 285, { align: 'center' });
+
+        const filename = `Factuur_${selectedEmp !== 'all' ? selectedEmp.replace(/\s+/g, '_') : 'Alle'}_${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(filename);
+        
+        showToast('✅ Factuur PDF gedownload!');
+    };
+
+    document.getElementById('clearListBtn').onclick = () => {
+        if (!confirm('مسح القوائم (الأسماء، الأماكن، أصحاب العمل)؟')) return;
+        names.clear(); locs.clear(); employers.clear();
+        markUnsaved(); updateStats();
+        showToast('🧹 تم مسح القوائم');
+    };
+
+    window.addEventListener('beforeunload', (e) => { if (hasUnsavedChanges) { e.preventDefault(); e.returnValue = '⚠️ لديك تغييرات غير محفوظة!'; } });
+    setInterval(() => { if (hasUnsavedChanges) autoSave(); }, 30000);
+
+    initTimeSelects();
+    load();
     const today = new Date();
-    document.getElementById('inpDate').value = today.toISOString().split('T')[0];
-    document.getElementById('inpMonth').value = today.toISOString().slice(0, 7);
-    loadData();
-};
-
-window.onbeforeunload = function() {
-    if (entries.length > 0) saveData();
-};
+    els.d.value = today.toISOString().split('T')[0];
+    els.m.value = today.toISOString().slice(0, 7);
+    calc();
 </script>
 
 </body>
